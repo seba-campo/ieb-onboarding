@@ -1,0 +1,12 @@
+{
+  "name": "challenge-onboarding-fintech",
+  "version": "1.0.0",
+  "scripts": {
+    "install-all": "yarn install && cd backend && yarn install && cd ../frontend && yarn install",
+    "dev": "concurrently \"yarn --cwd backend nodemon server.js\" \"yarn --cwd frontend dev\"",
+    "seed": "node backend/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
