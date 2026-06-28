@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "install-all": "yarn install && cd backend && yarn install && cd ../frontend && yarn install",
-    "dev": "concurrently \"yarn --cwd backend nodemon server.js\" \"yarn --cwd frontend dev\"",
+    "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"blue,green\" \"yarn --cwd backend dev\" \"yarn --cwd frontend dev\"",
     "seed": "node backend/seed.js",
     "format": "prettier --write \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"backend/src/**/*.ts\" \"frontend/src/**/*.{ts,tsx}\""

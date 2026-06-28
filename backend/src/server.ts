@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import onboardingRoutes from './routes/onboardingRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import { onboardingWorker } from './workers/onboardingWorker';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
@@ -15,6 +16,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 
 // Inyección de rutas
 app.use('/api', onboardingRoutes);
+app.use('/api', analyticsRoutes);
 
 /**
  * Endpoint de monitoreo operativo (Health Check)
