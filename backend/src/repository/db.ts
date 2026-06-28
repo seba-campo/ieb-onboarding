@@ -16,8 +16,8 @@ const pool = new pg.Pool({
   ssl: {
     rejectUnauthorized: true,
   },
-  max: 10, 
-  idleTimeoutMillis: 30000, 
+  max: 10,
+  idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000, // !!! Tiempo límite para obtener una conexión del pooler antes de fallar
 });
 

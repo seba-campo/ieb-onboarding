@@ -6,10 +6,10 @@ export const onboardingController = {
   async create(req: Request<{}, {}, CreateOnboardingDTO>, res: Response) {
     try {
       const { optionalSteps } = req.body;
-      
+
       // Ejecutamos el caso de uso
       const newOnboarding = await onboardingService.startOnboarding({ optionalSteps });
-      
+
       return res.status(201).json(newOnboarding);
     } catch (error) {
       console.error('Error en OnboardingController.create:', error);
@@ -28,5 +28,5 @@ export const onboardingController = {
       }
       return res.status(500).json({ error: 'Internal Server Error' });
     }
-  }
+  },
 };

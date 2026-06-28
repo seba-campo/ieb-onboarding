@@ -1,4 +1,4 @@
-import { db } from './db'; 
+import { db } from './db';
 import { OnboardingResponseDTO } from '../dtos/onboarding.dto';
 
 export const onboardingRepository = {
@@ -20,5 +20,5 @@ export const onboardingRepository = {
     `;
     const { rows } = await db.query(queryText, [id]);
     return rows[0] || null;
-  }
+  },
 };

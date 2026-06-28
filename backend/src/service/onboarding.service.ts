@@ -13,5 +13,5 @@ export const onboardingService = {
       throw new Error('ONBOARDING_NOT_FOUND');
     }
     return onboarding;
-  }
+  },
 };
