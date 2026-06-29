@@ -13,22 +13,31 @@ const STEP_NAMES: string[] = [
   'welcome_kit',
 ];
 
+interface FieldOption {
+  value: string;
+  label: string;
+}
+
 interface FieldConfig {
   name: string;
   label: string;
   type: 'text' | 'email' | 'tel' | 'select';
   placeholder?: string;
-  options?: string[];
+  options?: Array<string | FieldOption>;
 }
 
 const STEP_FIELDS: Record<number, FieldConfig[]> = {
   1: [
     { name: 'firstName', label: 'Nombre', type: 'text', placeholder: 'Juan' },
     { name: 'lastName', label: 'Apellido', type: 'text', placeholder: 'Pérez' },
-    { name: 'documentNumber', label: 'DNI / CUIL', type: 'text', placeholder: '20.123.456-7' },
+    { name: 'dni', label: 'DNI', type: 'text', placeholder: '20123456' },
+    { name: 'gender', label: 'Género', type: 'select', options: ['M', 'F', 'X'] },
   ],
-  2: [{ name: 'email', label: 'Correo electrónico', type: 'email', placeholder: 'juan@ejemplo.com' }],
-  3: [{ name: 'phone', label: 'Teléfono celular', type: 'tel', placeholder: '+54 11 1234-5678' }],
+  2: [{ name: 'address', label: 'Correo electrónico', type: 'email', placeholder: 'juan@ejemplo.com' }],
+  3: [
+    { name: 'countryCode', label: 'Código de país', type: 'select', options: ['+54', '+1', '+34', '+598'] },
+    { name: 'number', label: 'Número celular', type: 'tel', placeholder: '1145678901' },
+  ],
   4: [
     {
       name: 'documentType',
@@ -55,12 +64,16 @@ const STEP_FIELDS: Record<number, FieldConfig[]> = {
     },
   ],
   7: [
-    { name: 'username', label: 'Alias preferido', type: 'text', placeholder: 'juan.perez' },
+    { name: 'alias', label: 'Alias CVU', type: 'text', placeholder: 'juan.perez.ieb' },
     {
       name: 'accountType',
       label: 'Tipo de cuenta',
       type: 'select',
-      options: ['Caja de Ahorro en Pesos', 'Cuenta Corriente', 'Caja de Ahorro en USD'],
+      options: [
+        { value: 'ARS_SAVINGS_ACCOUNT', label: 'Caja de ahorro ARS' },
+        { value: 'ARS_CHECKING_ACCOUNT', label: 'Cuenta corriente ARS' },
+        { value: 'USD_SAVINGS_ACCOUNT', label: 'Caja de ahorro USD' },
+      ],
     },
   ],
   8: [
@@ -71,6 +84,17 @@ const STEP_FIELDS: Record<number, FieldConfig[]> = {
       placeholder: 'Av. Corrientes 1234, CABA',
     },
   ],
+};
+
+const STEP_PAYLOAD_KEY: Record<number, string> = {
+  1: 'identity',
+  2: 'email',
+  3: 'phone',
+  4: 'documents',
+  5: 'biometrics',
+  6: 'creditScoring',
+  7: 'bankAccount',
+  8: 'welcomeKit',
 };
 
 const STEP_TITLES: Record<number, string> = {
@@ -93,7 +117,13 @@ interface StepFormProps {
 const StepForm: React.FC<StepFormProps> = ({ stepNumber, onSubmit, isSubmitting }) => {
   const fields = STEP_FIELDS[stepNumber] ?? [];
   const [formData, setFormData] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((f) => [f.name, f.options ? f.options[0] : '']))
+    Object.fromEntries(
+      fields.map((f) => {
+        const first = f.options?.[0];
+        const defaultVal = first ? (typeof first === 'string' ? first : first.value) : '';
+        return [f.name, defaultVal];
+      })
+    )
   );
 
   const handleChange = (name: string, value: string) => {
@@ -143,11 +173,15 @@ const StepForm: React.FC<StepFormProps> = ({ stepNumber, onSubmit, isSubmitting 
                   onChange={(e) => handleChange(field.name, e.target.value)}
                   style={inputStyle}
                 >
-                  {field.options?.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
+                  {field.options?.map((opt) => {
+                    const value = typeof opt === 'string' ? opt : opt.value;
+                    const label = typeof opt === 'string' ? opt : opt.label;
+                    return (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
               ) : (
                 <input
@@ -213,8 +247,10 @@ export const UserOnboarding: React.FC = () => {
     startNewOnboarding([]);
   };
 
-  const handleAdvance = (payload: Record<string, string>) => {
+  const handleAdvance = (formData: Record<string, string>) => {
     if (!onboarding) return;
+    const stepKey = STEP_PAYLOAD_KEY[onboarding.currentStep];
+    const payload = stepKey ? { [stepKey]: formData } : formData;
     advanceStep({ id: onboarding.id, payload });
   };
 

@@ -4,7 +4,7 @@ export interface CreateOnboardingDTO {
 }
 
 export interface AdvanceStepDTO {
-  payload: Record<string, string>;
+  payload: Record<string, any>;
 }
 
 export interface OnboardingResponseDTO {
@@ -17,6 +17,7 @@ export interface OnboardingResponseDTO {
     optionalSteps: string[];
     isManual?: boolean;
   };
+  payload: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }

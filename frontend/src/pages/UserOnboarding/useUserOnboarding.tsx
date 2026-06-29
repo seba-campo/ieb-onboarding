@@ -5,7 +5,7 @@ import { OnboardingResponse } from '../../types/onboarding.types';
 
 interface AdvanceStepArgs {
   id: string;
-  payload: Record<string, string>;
+  payload: Record<string, any>;
 }
 
 interface UseOnboardingReturn {

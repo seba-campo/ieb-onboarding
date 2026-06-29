@@ -16,7 +16,7 @@ export const onboardingService = {
     ) as unknown as OnboardingResponse;
   },
 
-  async advanceStep(id: string, payload: Record<string, string>): Promise<OnboardingResponse> {
+  async advanceStep(id: string, payload: Record<string, any>): Promise<OnboardingResponse> {
     return apiClient.post<any, OnboardingResponse>(`/api/onboardings/${id}/advance`, {
       payload,
     }) as unknown as OnboardingResponse;

@@ -26,9 +26,6 @@ app.use(express.json());
 app.use('/api', onboardingRoutes);
 app.use('/api', analyticsRoutes);
 
-/**
- * Endpoint de monitoreo operativo (Health Check)
- */
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'UP',
@@ -38,8 +35,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`[🚀 Onboarding Server]: Servicio Express inicializado en el puerto ${PORT}`);
-  //Encender el worker al iniciar el server.
-  onboardingWorker.start();
+  await onboardingWorker.start();
 });

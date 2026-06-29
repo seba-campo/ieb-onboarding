@@ -7,8 +7,20 @@ export class OnboardingWorker {
   private activeTasksCount: number = 0;
   private MAX_CONCURRENCY: number = 25; // Slots paralelos de procesamiento
 
-  public start() {
+  public async start() {
     if (this.isRunning) return;
+
+    // Recover rows stuck in PROCESSING from a previous server crash (e.g. tsx restart mid-flight).
+    // Without this, rows locked in PROCESSING are never picked up again since the loop only queries PENDING/FAILED.
+    const { rowCount } = await db.query(`
+      UPDATE onboardings
+      SET status = 'FAILED', next_attempt_at = NOW(), updated_at = NOW()
+      WHERE status = 'PROCESSING'
+    `);
+    if (rowCount && rowCount > 0) {
+      console.log(`[⚙️ Worker]: ${rowCount} fila(s) en estado PROCESSING recuperadas → FAILED para reintento.`);
+    }
+
     this.isRunning = true;
     console.log('[⚙️ Worker]: Motor de procesamiento concurrente inicializado.');
     this.loop();
@@ -114,7 +126,7 @@ export class OnboardingWorker {
       const result = await stepProcessor.executeStep(job.currentStep, job.id);
 
       if (result.success) {
-        await this.handleStepSuccess(job.id, job.currentStep, result.duration, 'SUCCESS');
+        await this.handleStepSuccess(job.id, job.currentStep, result.duration, 'SUCCESS', result.mockData || {});
       } else {
         await this.handleStepFailure(
           job.id,
@@ -147,16 +159,21 @@ export class OnboardingWorker {
     id: string,
     currentStep: number,
     duration: number,
-    statusLog: string
+    _statusLog: string,
+    mockData: Record<string, any> = {}
   ) {
     const isLastStep = currentStep === 8;
     const nextStatus = isLastStep ? 'COMPLETED' : 'PENDING';
     const nextStep = isLastStep ? currentStep : currentStep + 1;
 
     const query = `
-      UPDATE onboardings SET status = $1, current_step = $2, attempts = 0, next_attempt_at = NOW(), updated_at = NOW() WHERE id = $3;
+      UPDATE onboardings
+      SET status = $1, current_step = $2, attempts = 0,
+          next_attempt_at = NOW(), updated_at = NOW(),
+          payload = payload || $3::jsonb
+      WHERE id = $4;
     `;
-    await db.query(query, [nextStatus, nextStep, id]);
+    await db.query(query, [nextStatus, nextStep, JSON.stringify(mockData), id]);
 
     const stepName = this.getStepName(currentStep);
     const logQuery = `

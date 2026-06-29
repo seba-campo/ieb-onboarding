@@ -11,8 +11,9 @@ export interface OnboardingResponse {
   status: OnboardingStatus;
   currentStep: number;
   attempts: number;
-  nextAttemptAt: string; // ISO string devuelto por el JSON de la API
+  nextAttemptAt: string;
   config: OnboardingConfig;
+  payload: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }

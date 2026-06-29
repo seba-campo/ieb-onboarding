@@ -2,8 +2,6 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 
-const { Pool } = pg;
-
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 if (!process.env.DATABASE_URL) {

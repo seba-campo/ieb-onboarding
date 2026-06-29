@@ -15,21 +15,21 @@ const STEP_NAMES: Record<number, string> = {
 export const onboardingRepository = {
   async create(optionalSteps: string[], isManual: boolean): Promise<OnboardingResponseDTO> {
     const config = { optionalSteps, isManual };
-    const queryText = `
+    const query = `
       INSERT INTO onboardings (config)
       VALUES ($1)
-      RETURNING id, status, current_step as "currentStep", attempts, next_attempt_at as "nextAttemptAt", config, created_at as "createdAt", updated_at as "updatedAt";
+      RETURNING id, status, current_step as "currentStep", attempts, next_attempt_at as "nextAttemptAt", config, payload, created_at as "createdAt", updated_at as "updatedAt";
     `;
-    const { rows } = await db.query(queryText, [JSON.stringify(config)]);
+    const { rows } = await db.query(query, [JSON.stringify(config)]);
     return rows[0];
   },
 
   async findById(id: string): Promise<OnboardingResponseDTO | null> {
-    const queryText = `
-      SELECT id, status, current_step as "currentStep", attempts, next_attempt_at as "nextAttemptAt", config, created_at as "createdAt", updated_at as "updatedAt"
+    const query = `
+      SELECT id, status, current_step as "currentStep", attempts, next_attempt_at as "nextAttemptAt", config, payload, created_at as "createdAt", updated_at as "updatedAt"
       FROM onboardings WHERE id = $1;
     `;
-    const { rows } = await db.query(queryText, [id]);
+    const { rows } = await db.query(query, [id]);
     return rows[0] || null;
   },
 
@@ -46,24 +46,24 @@ export const onboardingRepository = {
       values.push(options.status);
       whereClause = `WHERE status = $${values.length}`;
     }
-    const queryText = `
+    const query = `
       SELECT id, status, current_step AS "currentStep", attempts,
-        next_attempt_at AS "nextAttemptAt", config,
+        next_attempt_at AS "nextAttemptAt", config, payload,
         created_at AS "createdAt", updated_at AS "updatedAt"
       FROM onboardings
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2;
     `;
-    const { rows } = await db.query(queryText, values);
+    const { rows } = await db.query(query, values);
     return rows;
   },
 
   async updateStatus(id: string, status: 'PAUSED' | 'PENDING' | 'CANCELLED'): Promise<void> {
-    await db.query(
-      `UPDATE onboardings SET status = $1, updated_at = NOW() WHERE id = $2`,
-      [status, id]
-    );
+    await db.query(`UPDATE onboardings SET status = $1, updated_at = NOW() WHERE id = $2`, [
+      status,
+      id,
+    ]);
   },
 
   async advanceStep(
@@ -90,8 +90,12 @@ export const onboardingRepository = {
     );
 
     await db.query(
-      `UPDATE onboardings SET status = $1, current_step = $2, attempts = 0, next_attempt_at = NOW(), updated_at = NOW() WHERE id = $3`,
-      [nextStatus, nextStep, id]
+      `UPDATE onboardings
+       SET status = $1, current_step = $2, attempts = 0,
+           next_attempt_at = NOW(), updated_at = NOW(),
+           payload = payload || $3::jsonb
+       WHERE id = $4`,
+      [nextStatus, nextStep, JSON.stringify(payload), id]
     );
 
     return this.findById(id);
