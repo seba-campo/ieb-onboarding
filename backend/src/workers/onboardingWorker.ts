@@ -3,7 +3,9 @@ import { stepProcessor } from '../service/stepProcessor.service';
 
 export class OnboardingWorker {
   private isRunning: boolean = false;
-  private intervalMs: number = 1000;
+  private intervalMs: number = 100; // Tiempo de escaneo entre pasos
+  private activeTasksCount: number = 0;
+  private MAX_CONCURRENCY: number = 25; // Slots paralelos de procesamiento
 
   public start() {
     if (this.isRunning) return;
@@ -14,21 +16,37 @@ export class OnboardingWorker {
 
   private async loop() {
     while (this.isRunning) {
-      try {
-        await this.processNextJob();
-      } catch (error) {
-        console.error('[⚙️ Worker Error]: Error crítico en el ciclo de consumo:', error);
+      // Si ya llegamos al límite de tareas paralelas, pausamos el bucle un instante
+      if (this.activeTasksCount >= this.MAX_CONCURRENCY) {
+        await new Promise((res) => setTimeout(res, 50));
+        continue;
       }
-      await new Promise((res) => setTimeout(res, this.intervalMs));
+
+      try {
+        // Intentamos tomar un trabajo. Devuelve 'true' si encontró uno y arrancó la tarea.
+        const jobStarted = await this.processNextJob();
+
+        // Si no había tareas disponibles en Neon, le damos un respiro al bucle
+        if (!jobStarted) {
+          await new Promise((res) => setTimeout(res, this.intervalMs));
+        }
+
+        // Si encontró trabajo, el loop vuelve a girar INMEDIATAMENTE sin esperar los delays
+        // del mock, buscando llenar el próximo slot libre de concurrencia.
+      } catch (error) {
+        console.error('[⚙️ Worker Error]: Falló el ciclo de consumo:', error);
+        await new Promise((res) => setTimeout(res, this.intervalMs));
+      }
     }
   }
 
-  private async processNextJob() {
+  private async processNextJob(): Promise<boolean> {
     const client = await db.connect();
 
     try {
       await client.query('BEGIN');
 
+      // Selección y bloqueo atómico con SKIP LOCKED
       const selectQuery = `
         UPDATE onboardings SET status = 'PROCESSING', updated_at = NOW()
         WHERE id = (
@@ -45,12 +63,27 @@ export class OnboardingWorker {
 
       if (rows.length === 0) {
         await client.query('COMMIT');
-        return;
+        return false; // No hay tareas listas en este segundo
       }
 
       const job = rows[0];
-      await client.query('COMMIT');
+      await client.query('COMMIT'); // ¡CRÍTICO! Liberamos el bloqueo global de fila rápido. La fila ya quedó reservada en 'PROCESSING'.
 
+      // Ocupamos un slot de concurrencia e iniciamos el procesamiento asíncronamente (SIN AWAIT)
+      this.activeTasksCount++;
+      this.runTaskBackground(job);
+
+      return true; // Tarea iniciada con éxito
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release(); // Devolver la conexión de control al pooler de Neon
+    }
+  }
+
+  private async runTaskBackground(job: any): Promise<void> {
+    try {
       const stepNames: Record<number, string> = {
         1: 'identity_verification',
         2: 'email_confirmation',
@@ -62,21 +95,16 @@ export class OnboardingWorker {
         8: 'welcome_kit',
       };
 
-      const isManual: boolean = job.config?.isManual === true;
-
-      if (isManual) {
-        await this.handleAwaitingInput(job.id, job.currentStep);
-        return;
-      }
-
       const optionalSteps: string[] = job.config.optionalSteps || [];
       const currentStepName = stepNames[job.currentStep];
 
+      // Verificación de paso opcional
       if (optionalSteps.includes(currentStepName)) {
         await this.handleStepSuccess(job.id, job.currentStep, 0, 'SKIPPED');
         return;
       }
 
+      // El retardo del mock ocurre acá adentro, bloqueando este hilo virtual, no el bucle principal
       const result = await stepProcessor.executeStep(job.currentStep, job.id);
 
       if (result.success) {
@@ -91,11 +119,22 @@ export class OnboardingWorker {
         );
       }
     } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
+      console.error(`[🚨 Task Exception] Error procesando Onboarding ${job.id}:`, error);
     } finally {
-      client.release();
+      // Pase lo que pase, al terminar (éxito o falla), liberamos el slot de concurrencia
+      this.activeTasksCount--;
     }
+  }
+
+  private async handleAwaitingInput(id: string, currentStep: number) {
+    await db.query(`UPDATE onboardings SET status = 'PAUSED', updated_at = NOW() WHERE id = $1`, [
+      id,
+    ]);
+
+    const stepName = this.getStepName(currentStep);
+    console.log(
+      `[⏸️ Worker]: Onboarding ${id} pausado en paso ${stepName} — esperando input del usuario.`
+    );
   }
 
   private async handleStepSuccess(
@@ -109,28 +148,15 @@ export class OnboardingWorker {
     const nextStep = isLastStep ? currentStep : currentStep + 1;
 
     const query = `
-      UPDATE onboardings 
-      SET status = $1, current_step = $2, attempts = 0, next_attempt_at = NOW(), updated_at = NOW()
-      WHERE id = $3;
+      UPDATE onboardings SET status = $1, current_step = $2, attempts = 0, next_attempt_at = NOW(), updated_at = NOW() WHERE id = $3;
     `;
     await db.query(query, [nextStatus, nextStep, id]);
 
     const stepName = this.getStepName(currentStep);
     const logQuery = `
-      INSERT INTO onboarding_logs (onboarding_id, step_name, status, duration_ms)
-      VALUES ($1, $2, 'SUCCESS', $3);
+      INSERT INTO onboarding_logs (onboarding_id, step_name, status, duration_ms) VALUES ($1, $2, 'SUCCESS', $3);
     `;
     await db.query(logQuery, [id, stepName, duration]);
-  }
-
-  private async handleAwaitingInput(id: string, currentStep: number) {
-    await db.query(
-      `UPDATE onboardings SET status = 'PAUSED', updated_at = NOW() WHERE id = $1`,
-      [id]
-    );
-
-    const stepName = this.getStepName(currentStep);
-    console.log(`[⏸️ Worker]: Onboarding ${id} pausado en paso ${stepName} — esperando input del usuario.`);
   }
 
   private async handleStepFailure(
@@ -141,23 +167,16 @@ export class OnboardingWorker {
     error: string
   ) {
     const newAttempts = currentAttempts + 1;
-
-    // Configuración de Backoff Exponencial en segundos: 2^attempts * 10 segundos
     const backoffSeconds = Math.pow(2, newAttempts) * 10;
 
-    // 1. Actualizar el estado maestro a FAILED y setear el próximo intento en el futuro
     const query = `
-      UPDATE onboardings 
-      SET status = 'FAILED', attempts = $1, next_attempt_at = NOW() + ($2 || ' second')::interval, updated_at = NOW()
-      WHERE id = $3;
+      UPDATE onboardings SET status = 'FAILED', attempts = $1, next_attempt_at = NOW() + ($2 || ' second')::interval, updated_at = NOW() WHERE id = $3;
     `;
     await db.query(query, [newAttempts, backoffSeconds, id]);
 
-    // 2. Insertar el log de falla pasando el string resuelto desde TS
     const stepName = this.getStepName(currentStep);
     const logQuery = `
-      INSERT INTO onboarding_logs (onboarding_id, step_name, status, duration_ms, error_message)
-      VALUES ($1, $2, 'FAIL', $3, $4);
+      INSERT INTO onboarding_logs (onboarding_id, step_name, status, duration_ms, error_message) VALUES ($1, $2, 'FAIL', $3, $4);
     `;
     await db.query(logQuery, [id, stepName, duration, error]);
   }

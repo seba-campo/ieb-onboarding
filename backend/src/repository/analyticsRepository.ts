@@ -30,21 +30,43 @@ export const analyticsRepository = {
 
     // 3. Tasa de error por paso (Fallos / Total de intentos del paso)
     const errorRateQuery = `
-      SELECT 
+      SELECT
         step_name,
         ROUND((COUNT(CASE WHEN status = 'FAIL' THEN 1 END) * 100.0) / COUNT(*), 2) as "error_rate_pct"
       FROM onboarding_logs
-      GROUP BY step_name;
+      GROUP BY step_name
+      ORDER BY CASE step_name
+        WHEN 'identity_verification' THEN 1
+        WHEN 'email_confirmation'    THEN 2
+        WHEN 'phone_verification'    THEN 3
+        WHEN 'document_upload'       THEN 4
+        WHEN 'selfie_check'          THEN 5
+        WHEN 'risk_scoring'          THEN 6
+        WHEN 'account_creation'      THEN 7
+        WHEN 'welcome_kit'           THEN 8
+        ELSE 9
+      END;
     `;
 
     // 4. Tiempo promedio por paso y total global de los completados
     const avgTimeQuery = `
-      SELECT 
+      SELECT
         step_name,
         ROUND(AVG(duration_ms), 0) as "avg_duration_ms"
       FROM onboarding_logs
       WHERE status = 'SUCCESS'
-      GROUP BY step_name;
+      GROUP BY step_name
+      ORDER BY CASE step_name
+        WHEN 'identity_verification' THEN 1
+        WHEN 'email_confirmation'    THEN 2
+        WHEN 'phone_verification'    THEN 3
+        WHEN 'document_upload'       THEN 4
+        WHEN 'selfie_check'          THEN 5
+        WHEN 'risk_scoring'          THEN 6
+        WHEN 'account_creation'      THEN 7
+        WHEN 'welcome_kit'           THEN 8
+        ELSE 9
+      END;
     `;
 
     // Ejecutamos todas las consultas en paralelo para optimizar el uso del pooler de Neon

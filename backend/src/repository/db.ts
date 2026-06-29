@@ -16,7 +16,7 @@ const pool = new pg.Pool({
   ssl: {
     rejectUnauthorized: true,
   },
-  max: 10,
+  max: 30, // Conexiones locales (segun proveedor rango de 10 a 30 es estable en neon)
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000, // !!! Tiempo límite para obtener una conexión del pooler antes de fallar
 });
