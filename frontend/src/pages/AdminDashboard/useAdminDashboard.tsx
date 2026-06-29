@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DashboardMetrics } from '../../types/analytics.types';
+import { useQuery } from '@tanstack/react-query';
+import { DashboardMetrics, OnboardingRecord } from '../../types/analytics.types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
 
@@ -42,4 +43,16 @@ export const useDashboardStream = () => {
   }, []);
 
   return { metrics, connected, error };
+};
+
+export const useOnboardingHistory = () => {
+  return useQuery<OnboardingRecord[]>({
+    queryKey: ['onboarding-history'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/onboardings?limit=50`);
+      if (!res.ok) throw new Error('Failed to fetch history');
+      return res.json();
+    },
+    refetchInterval: 15_000,
+  });
 };

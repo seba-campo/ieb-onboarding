@@ -104,6 +104,12 @@ export class OnboardingWorker {
         return;
       }
 
+      // En modo manual cada paso requiere input explícito del usuario — pausar y esperar
+      if (job.config?.isManual === true) {
+        await this.handleAwaitingInput(job.id, job.currentStep);
+        return;
+      }
+
       // El retardo del mock ocurre acá adentro, bloqueando este hilo virtual, no el bucle principal
       const result = await stepProcessor.executeStep(job.currentStep, job.id);
 

@@ -33,7 +33,43 @@ export const onboardingRepository = {
     return rows[0] || null;
   },
 
-  async advanceStep(id: string, payload: Record<string, string>): Promise<OnboardingResponseDTO | null> {
+  async findAll(options?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<OnboardingResponseDTO[]> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    const values: any[] = [limit, offset];
+    let whereClause = '';
+    if (options?.status) {
+      values.push(options.status);
+      whereClause = `WHERE status = $${values.length}`;
+    }
+    const queryText = `
+      SELECT id, status, current_step AS "currentStep", attempts,
+        next_attempt_at AS "nextAttemptAt", config,
+        created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM onboardings
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT $1 OFFSET $2;
+    `;
+    const { rows } = await db.query(queryText, values);
+    return rows;
+  },
+
+  async updateStatus(id: string, status: 'PAUSED' | 'PENDING' | 'CANCELLED'): Promise<void> {
+    await db.query(
+      `UPDATE onboardings SET status = $1, updated_at = NOW() WHERE id = $2`,
+      [status, id]
+    );
+  },
+
+  async advanceStep(
+    id: string,
+    payload: Record<string, string>
+  ): Promise<OnboardingResponseDTO | null> {
     const onboarding = await this.findById(id);
     if (!onboarding) return null;
 

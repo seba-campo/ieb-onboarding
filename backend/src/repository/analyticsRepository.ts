@@ -2,6 +2,15 @@ import { db } from './db';
 
 export interface DashboardMetrics {
   activeCount: number;
+  activeOnboardings: {
+    id: string;
+    status: string;
+    currentStep: number;
+    attempts: number;
+    config: { optionalSteps: string[]; isManual?: boolean };
+    createdAt: string;
+    updatedAt: string;
+  }[];
   funnel: { step_name: string; count: number }[];
   errorRates: { step_name: string; error_rate_pct: number }[];
   averageTimes: { step_name: string; avg_duration_ms: number; total_avg_ms: number };
@@ -12,11 +21,27 @@ export const analyticsRepository = {
    * Ejecuta consultas en paralelo para extraer la foto analítica actual del sistema.
    */
   async getDashboardMetrics(): Promise<any> {
-    // 1. Contador de onboardings activos (PENDING, PROCESSING, FAILED)
+    // 1. Contador de onboardings activos (PENDING, PROCESSING, FAILED, PAUSED)
     const activeQuery = `
-      SELECT COUNT(*) as "activeCount" 
-      FROM onboardings 
-      WHERE status IN ('PENDING', 'PROCESSING', 'FAILED');
+      SELECT COUNT(*) as "activeCount"
+      FROM onboardings
+      WHERE status IN ('PENDING', 'PROCESSING', 'FAILED', 'PAUSED');
+    `;
+
+    // 1b. Lista individual de onboardings activos para la tabla del dashboard
+    const activeOnboardingsQuery = `
+      SELECT
+        id,
+        status,
+        current_step AS "currentStep",
+        attempts,
+        config,
+        created_at   AS "createdAt",
+        updated_at   AS "updatedAt"
+      FROM onboardings
+      WHERE status IN ('PENDING', 'PROCESSING', 'FAILED', 'PAUSED')
+      ORDER BY created_at ASC
+      LIMIT 100;
     `;
 
     // 2. Funnel de conversión: Cuántos usuarios únicos alcanzaron con éxito cada paso
@@ -69,9 +94,10 @@ export const analyticsRepository = {
       END;
     `;
 
-    // Ejecutamos todas las consultas en paralelo para optimizar el uso del pooler de Neon
-    const [activeRes, funnelRes, errorRes, avgRes] = await Promise.all([
+    // se ejecuta todas las consultas en paralelo para optimizar el uso del pooler de Neon
+    const [activeRes, activeOnboardingsRes, funnelRes, errorRes, avgRes] = await Promise.all([
       db.query(activeQuery),
+      db.query(activeOnboardingsQuery),
       db.query(funnelQuery),
       db.query(errorRateQuery),
       db.query(avgTimeQuery),
@@ -79,6 +105,7 @@ export const analyticsRepository = {
 
     return {
       activeCount: parseInt(activeRes.rows[0].activeCount, 10),
+      activeOnboardings: activeOnboardingsRes.rows,
       funnel: funnelRes.rows,
       errorRates: errorRes.rows,
       averageTimes: avgRes.rows,

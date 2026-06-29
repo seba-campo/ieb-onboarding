@@ -21,4 +21,16 @@ export const onboardingService = {
       payload,
     }) as unknown as OnboardingResponse;
   },
+
+  async pause(id: string): Promise<void> {
+    await apiClient.post(`/api/onboardings/${id}/pause`);
+  },
+
+  async resume(id: string): Promise<void> {
+    await apiClient.post(`/api/onboardings/${id}/resume`);
+  },
+
+  async cancel(id: string): Promise<void> {
+    await apiClient.post(`/api/onboardings/${id}/cancel`);
+  },
 };

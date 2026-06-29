@@ -27,6 +27,55 @@ export const onboardingController = {
     }
   },
 
+  async list(req: Request, res: Response) {
+    try {
+      const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+      const results = await onboardingService.listOnboardings({ status, limit, offset });
+      return res.status(200).json(results);
+    } catch (error) {
+      console.error('Error en onboardingController.list:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+  async pause(req: Request<{ id: string }>, res: Response) {
+    try {
+      await onboardingService.pauseOnboarding(req.params.id);
+      return res.status(200).json({ message: 'Proceso pausado con éxito.' });
+    } catch (error: any) {
+      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_CANNOT_PAUSE') return res.status(409).json({ error: 'El onboarding no puede pausarse en su estado actual' });
+      console.error('Error en onboardingController.pause:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+  async resume(req: Request<{ id: string }>, res: Response) {
+    try {
+      await onboardingService.resumeOnboarding(req.params.id);
+      return res.status(200).json({ message: 'Proceso reanudado con éxito.' });
+    } catch (error: any) {
+      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_NOT_PAUSED') return res.status(409).json({ error: 'El onboarding no está en estado PAUSED' });
+      console.error('Error en onboardingController.resume:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+  async cancel(req: Request<{ id: string }>, res: Response) {
+    try {
+      await onboardingService.cancelOnboarding(req.params.id);
+      return res.status(200).json({ message: 'Proceso cancelado definitivamente.' });
+    } catch (error: any) {
+      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_ALREADY_TERMINAL') return res.status(409).json({ error: 'El onboarding ya está en un estado terminal' });
+      console.error('Error en onboardingController.cancel:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
   async advance(req: Request<{ id: string }, {}, AdvanceStepDTO>, res: Response) {
     try {
       const { id } = req.params;
