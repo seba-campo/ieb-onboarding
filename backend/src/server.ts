@@ -6,13 +6,21 @@ import onboardingRoutes from './routes/onboardingRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import { onboardingWorker } from './workers/onboardingWorker';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 const app: Application = express();
 
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 // Middlewares Globales
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 
 // Inyección de rutas
 app.use('/api', onboardingRoutes);

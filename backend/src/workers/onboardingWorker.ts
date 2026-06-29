@@ -62,6 +62,13 @@ export class OnboardingWorker {
         8: 'welcome_kit',
       };
 
+      const isManual: boolean = job.config?.isManual === true;
+
+      if (isManual) {
+        await this.handleAwaitingInput(job.id, job.currentStep);
+        return;
+      }
+
       const optionalSteps: string[] = job.config.optionalSteps || [];
       const currentStepName = stepNames[job.currentStep];
 
@@ -114,6 +121,16 @@ export class OnboardingWorker {
       VALUES ($1, $2, 'SUCCESS', $3);
     `;
     await db.query(logQuery, [id, stepName, duration]);
+  }
+
+  private async handleAwaitingInput(id: string, currentStep: number) {
+    await db.query(
+      `UPDATE onboardings SET status = 'PAUSED', updated_at = NOW() WHERE id = $1`,
+      [id]
+    );
+
+    const stepName = this.getStepName(currentStep);
+    console.log(`[⏸️ Worker]: Onboarding ${id} pausado en paso ${stepName} — esperando input del usuario.`);
   }
 
   private async handleStepFailure(

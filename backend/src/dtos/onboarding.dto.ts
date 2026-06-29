@@ -1,6 +1,10 @@
 export interface CreateOnboardingDTO {
-  // El cliente puede pasar una lista de strings con los pasos opcionales que desea omitir o activar
   optionalSteps?: string[];
+  isManual?: boolean;
+}
+
+export interface AdvanceStepDTO {
+  payload: Record<string, string>;
 }
 
 export interface OnboardingResponseDTO {
@@ -11,6 +15,7 @@ export interface OnboardingResponseDTO {
   nextAttemptAt: Date;
   config: {
     optionalSteps: string[];
+    isManual?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;

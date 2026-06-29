@@ -15,4 +15,10 @@ router.post('/onboardings', onboardingController.create);
  */
 router.get('/onboardings/:id', onboardingController.getStatus);
 
+/**
+ * @route POST /api/onboardings/:id/advance
+ * @desc Avanzar manualmente un paso en modo interactivo (envía payload del usuario)
+ */
+router.post('/onboardings/:id/advance', onboardingController.advance);
+
 export default router;
