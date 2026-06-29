@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardMetrics, OnboardingRecord } from '../../types/analytics.types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
+const API_BASE_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'http://localhost:3000';
 
 export const useDashboardStream = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
