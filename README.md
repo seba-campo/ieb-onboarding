@@ -95,7 +95,8 @@ La clave es `FOR UPDATE SKIP LOCKED`: si otro worker ya tomó esa fila, la salt
 
 ## Modelo de datos
 
-![[Pasted image 20260630133308.png]]
+<img width="959" height="676" alt="image" src="https://github.com/user-attachments/assets/47c211f7-2010-4069-bae9-ad2338fa3611" />
+
 
 ### Los 8 pasos del onboarding
 
