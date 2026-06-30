@@ -1,5 +1,6 @@
 import { alertRepository } from '../repository/alertRepository';
 import { configRepository } from '../repository/configRepository';
+import { logger } from '../utils/logger';
 
 // Valores por defecto — usados si la clave no existe en system_configs
 export const ALERT_THRESHOLDS = {
@@ -39,7 +40,7 @@ class AlertService {
   private async sendToSlack(key: string, cooldownMs: number, blocks: object[]): Promise<void> {
     if (!this.webhookUrl) return;
     if (this.isCoolingDown(key, cooldownMs)) {
-      console.log(`[🔔 Alert] Suprimida por cooldown: ${key}`);
+      logger.info('Alerta suprimida por cooldown', { alertKey: key });
       return;
     }
 
@@ -50,13 +51,13 @@ class AlertService {
         body: JSON.stringify({ blocks }),
       });
       if (!res.ok) {
-        console.error(`[🚨 Alert] Slack respondió con status ${res.status}`);
+        logger.error('Slack respondió con error', { alertKey: key, status: res.status });
         return;
       }
       this.markSent(key);
-      console.log(`[🔔 Alert] Enviada a Slack: ${key}`);
+      logger.info('Alerta enviada a Slack', { alertKey: key });
     } catch (err) {
-      console.error('[🚨 Alert] Error al invocar Slack Webhook:', err);
+      logger.error('Error invocando Slack Webhook', { alertKey: key, error: String(err) });
     }
   }
 
@@ -146,7 +147,7 @@ class AlertService {
         );
       }
     } catch (err) {
-      console.error('[🚨 Alert] Error ejecutando checkAll():', err);
+      logger.error('Error ejecutando checkAll de alertas', { error: String(err) });
     }
   }
 }

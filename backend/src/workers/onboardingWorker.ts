@@ -1,6 +1,7 @@
 import { db } from '../repository/db';
 import { stepProcessor } from '../service/stepProcessor.service';
 import { alertService } from '../service/alert.service';
+import { logger } from '../utils/logger';
 
 export class OnboardingWorker {
   private isRunning: boolean = false;
@@ -19,15 +20,15 @@ export class OnboardingWorker {
       WHERE status = 'PROCESSING'
     `);
     if (rowCount && rowCount > 0) {
-      console.log(`[⚙️ Worker]: ${rowCount} fila(s) en estado PROCESSING recuperadas → FAILED para reintento.`);
+      logger.warn('Filas PROCESSING recuperadas al inicio', { recovered: rowCount });
     }
 
     this.isRunning = true;
-    console.log('[⚙️ Worker]: Motor de procesamiento concurrente inicializado.');
+    logger.info('Motor de procesamiento concurrente inicializado', { maxConcurrency: this.MAX_CONCURRENCY });
 
     // Verificación periódica de condiciones de alerta (cada 60 segundos)
     setInterval(() => alertService.checkAll(), 60_000);
-    console.log('[🔔 Worker]: Monitor de alertas activo (intervalo: 60s).');
+    logger.info('Monitor de alertas activo', { intervalMs: 60_000 });
 
     this.loop();
   }
@@ -52,7 +53,7 @@ export class OnboardingWorker {
         // Si encontró trabajo, el loop vuelve a girar INMEDIATAMENTE sin esperar los delays
         // del mock, buscando llenar el próximo slot libre de concurrencia.
       } catch (error) {
-        console.error('[⚙️ Worker Error]: Falló el ciclo de consumo:', error);
+        logger.error('Falló el ciclo de consumo del worker', { error: String(error) });
         await new Promise((res) => setTimeout(res, this.intervalMs));
       }
     }
@@ -143,7 +144,7 @@ export class OnboardingWorker {
         );
       }
     } catch (error) {
-      console.error(`[🚨 Task Exception] Error procesando Onboarding ${job.id}:`, error);
+      logger.error('Excepción no manejada procesando onboarding', { onboardingId: job.id, error: String(error) });
     } finally {
       // Pase lo que pase, al terminar (éxito o falla), liberamos el slot de concurrencia
       this.activeTasksCount--;
@@ -156,9 +157,7 @@ export class OnboardingWorker {
     ]);
 
     const stepName = this.getStepName(currentStep);
-    console.log(
-      `[⏸️ Worker]: Onboarding ${id} pausado en paso ${stepName} — esperando input del usuario.`
-    );
+    logger.info('Onboarding pausado esperando input manual', { onboardingId: id, step: stepName });
   }
 
   private async handleStepSuccess(

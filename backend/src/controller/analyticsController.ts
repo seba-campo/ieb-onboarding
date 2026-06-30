@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { analyticsRepository } from '../repository/analyticsRepository';
+import { logger } from '../utils/logger';
 
 export const analyticsController = {
   async streamDashboard(req: Request, res: Response) {
@@ -16,7 +17,7 @@ export const analyticsController = {
         const metrics = await analyticsRepository.getDashboardMetrics();
         res.write(`data: ${JSON.stringify(metrics)}\n\n`);
       } catch (error) {
-        console.error('[🚨 SSE Stream Error]: Falló el envío de métricas:', error);
+        logger.error('SSE: falló el envío de métricas', { error: String(error) });
       }
     };
 
@@ -28,7 +29,7 @@ export const analyticsController = {
     // CRÍTICO: Detectar si el usuario cerró la pestaña del Dashboard para limpiar la memoria
     req.on('close', () => {
       clearInterval(intervalId);
-      console.log('[🔌 SSE]: Cliente desconectado del dashboard stream.');
+      logger.info('SSE: cliente desconectado del dashboard stream');
       res.end();
     });
   },

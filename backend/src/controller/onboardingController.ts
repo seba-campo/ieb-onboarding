@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { onboardingService } from '../service/onboarding.service';
 import { AdvanceStepDTO, CreateOnboardingDTO } from '../dtos/onboarding.dto';
+import { logger } from '../utils/logger';
 
 export const onboardingController = {
   async create(req: Request<{}, {}, CreateOnboardingDTO>, res: Response) {
@@ -9,7 +10,7 @@ export const onboardingController = {
       const newOnboarding = await onboardingService.startOnboarding({ optionalSteps, isManual });
       return res.status(201).json(newOnboarding);
     } catch (error) {
-      console.error('Error en OnboardingController.create:', error);
+      logger.error('onboardingController.create falló', { correlationId: req.correlationId, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -38,7 +39,7 @@ export const onboardingController = {
       const results  = await onboardingService.listOnboardings({ status, limit, offset, dateFrom, dateTo, order });
       return res.status(200).json(results);
     } catch (error) {
-      console.error('Error en onboardingController.list:', error);
+      logger.error('onboardingController.list falló', { correlationId: req.correlationId, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -54,7 +55,7 @@ export const onboardingController = {
         return res
           .status(409)
           .json({ error: 'El onboarding no puede pausarse en su estado actual' });
-      console.error('Error en onboardingController.pause:', error);
+      logger.error('onboardingController.pause falló', { correlationId: req.correlationId, id: req.params.id, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -68,7 +69,7 @@ export const onboardingController = {
         return res.status(404).json({ error: 'Onboarding no encontrado' });
       if (error.message === 'ONBOARDING_NOT_PAUSED')
         return res.status(409).json({ error: 'El onboarding no está en estado PAUSED' });
-      console.error('Error en onboardingController.resume:', error);
+      logger.error('onboardingController.resume falló', { correlationId: req.correlationId, id: req.params.id, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -82,7 +83,7 @@ export const onboardingController = {
         return res.status(404).json({ error: 'Onboarding no encontrado' });
       if (error.message === 'ONBOARDING_ALREADY_TERMINAL')
         return res.status(409).json({ error: 'El onboarding ya está en un estado terminal' });
-      console.error('Error en onboardingController.cancel:', error);
+      logger.error('onboardingController.cancel falló', { correlationId: req.correlationId, id: req.params.id, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -105,7 +106,7 @@ export const onboardingController = {
       if (error.message === 'ONBOARDING_NOT_PAUSED') {
         return res.status(409).json({ error: 'El onboarding no está en estado PAUSED' });
       }
-      console.error('Error en OnboardingController.advance:', error);
+      logger.error('onboardingController.advance falló', { correlationId: req.correlationId, id: req.params.id, error: String(error) });
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   },
@@ -120,7 +121,7 @@ export const onboardingController = {
         message: `Se han inyectado ${count} nuevos procesos en la cola transaccional con éxito.`,
       });
     } catch (error) {
-      console.error('[🚨 Seed Error]:', error);
+      logger.error('seedBulk falló', { correlationId: req.correlationId, count, error: String(error) });
       return res.status(500).json({ error: 'Fallo al ejecutar la inyección masiva en Neon.' });
     }
   },

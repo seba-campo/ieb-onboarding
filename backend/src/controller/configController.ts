@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { configRepository } from '../repository/configRepository';
+import { logger } from '../utils/logger';
 
 export const configController = {
-  async getAll(_req: Request, res: Response): Promise<void> {
+  async getAll(req: Request, res: Response): Promise<void> {
     try {
       const configs = await configRepository.getAllConfigs();
       res.status(200).json({ configs });
     } catch (err) {
-      console.error('[configController] getAll error:', err);
+      logger.error('configController.getAll falló', { correlationId: req.correlationId, error: String(err) });
       res.status(500).json({ error: 'Error al obtener configuraciones' });
     }
   },
@@ -45,7 +46,7 @@ export const configController = {
       await configRepository.setConfig(key, String(numeric));
       res.status(200).json({ key, value: String(numeric) });
     } catch (err) {
-      console.error('[configController] update error:', err);
+      logger.error('configController.update falló', { correlationId: req.correlationId, key, error: String(err) });
       res.status(500).json({ error: 'Error al actualizar configuración' });
     }
   },

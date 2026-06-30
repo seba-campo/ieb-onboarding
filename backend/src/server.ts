@@ -6,6 +6,8 @@ import onboardingRoutes from './routes/onboardingRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import configRoutes from './routes/configRoutes';
 import { onboardingWorker } from './workers/onboardingWorker';
+import { correlationIdMiddleware } from './middleware/correlationId';
+import { logger } from './utils/logger';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
@@ -18,10 +20,11 @@ app.use(
   cors({
     origin: allowedOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
   })
 );
 app.use(express.json());
+app.use(correlationIdMiddleware);
 
 // Inyección de rutas
 app.use('/api', onboardingRoutes);
@@ -38,6 +41,6 @@ app.get('/health', (_req: Request, res: Response) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, async () => {
-  console.log(`[🚀 Onboarding Server]: Servicio Express inicializado en el puerto ${PORT}`);
+  logger.info('Onboarding Server inicializado', { port: PORT });
   await onboardingWorker.start();
 });
