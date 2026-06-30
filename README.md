@@ -2,6 +2,8 @@
 
 Sistema de onboarding masivo automatizado para incorporar usuarios mediante un flujo de 8 pasos secuenciales. Diseñado para procesar miles de solicitudes concurrentes con tolerancia a fallos, reintentos con backoff exponencial, alertas proactivas a Slack y un dashboard operativo en tiempo real.
 
+Link al deploy: https://onboarding-frontend-ec48.onrender.com/
+
 ---
 
 ## Stack
@@ -95,7 +97,8 @@ La clave es `FOR UPDATE SKIP LOCKED`: si otro worker ya tomó esa fila, la salt
 
 ## Modelo de datos
 
-![[Pasted image 20260630133308.png]]
+<img width="959" height="676" alt="image" src="https://github.com/user-attachments/assets/47c211f7-2010-4069-bae9-ad2338fa3611" />
+
 
 ### Los 8 pasos del onboarding
 
