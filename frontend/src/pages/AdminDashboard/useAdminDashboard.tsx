@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { DashboardMetrics, OnboardingRecord } from '../../types/analytics.types';
+import { onboardingService } from '../../api/onboarding';
 
 const API_BASE_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'http://localhost:3000';
 
@@ -42,7 +43,26 @@ export const useDashboardStream = () => {
     };
   }, []);
 
-  return { metrics, connected, error };
+  const {
+    mutate: triggerSeed,
+    isPending: isSeedPending,
+    isSuccess: isSeedSuccess,
+    data: seedData,
+  } = useMutation({
+    mutationFn: (qty: number) => onboardingService.triggerSeed(qty),
+  });
+
+  const handleStressTest = () => triggerSeed(100);
+
+  return {
+    metrics,
+    connected,
+    error,
+    handleStressTest,
+    isSeedPending,
+    isSeedSuccess,
+    seedMessage: isSeedSuccess ? seedData?.message : undefined,
+  };
 };
 
 export const useOnboardingHistory = () => {

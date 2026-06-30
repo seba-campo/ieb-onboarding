@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDashboardStream, useOnboardingHistory } from './useAdminDashboard';
 import { OnboardingRecord } from '../../types/analytics.types';
-import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap } from 'lucide-react';
 import { formatAge, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
 import { OnboardingInspector } from './OnboardingInspector';
 
@@ -194,7 +194,8 @@ const QueueTable: React.FC<{
 };
 
 export const AdminDashboard: React.FC = () => {
-  const { metrics, connected, error } = useDashboardStream();
+  const { metrics, connected, error, handleStressTest, isSeedPending, isSeedSuccess, seedMessage } =
+    useDashboardStream();
   const [tableView, setTableView] = useState<'active' | 'history'>('active');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory();
@@ -290,7 +291,42 @@ export const AdminDashboard: React.FC = () => {
                 Viendo los primeros 100
               </p>
             )}
+
+            {tableView === 'active' && (
+              <div
+                style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}
+              >
+                <button
+                  onClick={handleStressTest}
+                  disabled={isSeedPending}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.25rem',
+                    backgroundColor: '#e01e5a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(224,30,90,0.2)',
+                    width: 'auto',
+                  }}
+                >
+                  <Zap style={{ fill: 'white', width: '16px' }} />
+                  {isSeedPending ? 'Inyectando Carga...' : 'Simular Carga Masiva (100 Onboardings)'}
+                </button>
+
+                {isSeedSuccess && (
+                  <span style={{ color: '#137333', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                    ✅ {seedMessage}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
           <div style={{ display: 'flex', gap: '0.4rem' }}>
             {(['active', 'history'] as const).map((view) => (
               <button
@@ -332,10 +368,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Inspector de detalle (modal) */}
       {selectedId && (
-        <OnboardingInspector
-          onboardingId={selectedId}
-          onClose={() => setSelectedId(null)}
-        />
+        <OnboardingInspector onboardingId={selectedId} onClose={() => setSelectedId(null)} />
       )}
 
       {/* Paneles analíticos */}

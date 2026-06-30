@@ -51,6 +51,10 @@ export const onboardingService = {
     await onboardingRepository.updateStatus(id, 'CANCELLED');
   },
 
+  async seedBulk(count: number): Promise<void> {
+    await onboardingRepository.seedBulk(count);
+  },
+
   async advanceStep(id: string, dto: AdvanceStepDTO): Promise<OnboardingResponseDTO> {
     const onboarding = await onboardingRepository.findById(id);
     if (!onboarding) {

@@ -66,6 +66,21 @@ export const onboardingRepository = {
     ]);
   },
 
+  async seedBulk(count: number): Promise<void> {
+    const query = `
+      INSERT INTO onboardings (id, status, current_step, config, created_at, updated_at)
+      SELECT
+        gen_random_uuid(),
+        'PENDING',
+        1,
+        '{"optionalSteps":[]}'::jsonb,
+        NOW(),
+        NOW()
+      FROM generate_series(1, $1);
+    `;
+    await db.query(query, [count]);
+  },
+
   async advanceStep(
     id: string,
     payload: Record<string, string>

@@ -45,8 +45,12 @@ export const onboardingController = {
       await onboardingService.pauseOnboarding(req.params.id);
       return res.status(200).json({ message: 'Proceso pausado con éxito.' });
     } catch (error: any) {
-      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
-      if (error.message === 'ONBOARDING_CANNOT_PAUSE') return res.status(409).json({ error: 'El onboarding no puede pausarse en su estado actual' });
+      if (error.message === 'ONBOARDING_NOT_FOUND')
+        return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_CANNOT_PAUSE')
+        return res
+          .status(409)
+          .json({ error: 'El onboarding no puede pausarse en su estado actual' });
       console.error('Error en onboardingController.pause:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -57,8 +61,10 @@ export const onboardingController = {
       await onboardingService.resumeOnboarding(req.params.id);
       return res.status(200).json({ message: 'Proceso reanudado con éxito.' });
     } catch (error: any) {
-      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
-      if (error.message === 'ONBOARDING_NOT_PAUSED') return res.status(409).json({ error: 'El onboarding no está en estado PAUSED' });
+      if (error.message === 'ONBOARDING_NOT_FOUND')
+        return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_NOT_PAUSED')
+        return res.status(409).json({ error: 'El onboarding no está en estado PAUSED' });
       console.error('Error en onboardingController.resume:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -69,8 +75,10 @@ export const onboardingController = {
       await onboardingService.cancelOnboarding(req.params.id);
       return res.status(200).json({ message: 'Proceso cancelado definitivamente.' });
     } catch (error: any) {
-      if (error.message === 'ONBOARDING_NOT_FOUND') return res.status(404).json({ error: 'Onboarding no encontrado' });
-      if (error.message === 'ONBOARDING_ALREADY_TERMINAL') return res.status(409).json({ error: 'El onboarding ya está en un estado terminal' });
+      if (error.message === 'ONBOARDING_NOT_FOUND')
+        return res.status(404).json({ error: 'Onboarding no encontrado' });
+      if (error.message === 'ONBOARDING_ALREADY_TERMINAL')
+        return res.status(409).json({ error: 'El onboarding ya está en un estado terminal' });
       console.error('Error en onboardingController.cancel:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -96,6 +104,21 @@ export const onboardingController = {
       }
       console.error('Error en OnboardingController.advance:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  },
+
+  async seedBulk(req: Request, res: Response) {
+    const { quantity } = req.body;
+    const count = quantity ? parseInt(quantity, 10) : 50;
+
+    try {
+      await onboardingService.seedBulk(count);
+      return res.status(201).json({
+        message: `Se han inyectado ${count} nuevos procesos en la cola transaccional con éxito.`,
+      });
+    } catch (error) {
+      console.error('[🚨 Seed Error]:', error);
+      return res.status(500).json({ error: 'Fallo al ejecutar la inyección masiva en Neon.' });
     }
   },
 };

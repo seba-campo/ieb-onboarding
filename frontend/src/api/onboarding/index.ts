@@ -33,4 +33,8 @@ export const onboardingService = {
   async cancel(id: string): Promise<void> {
     await apiClient.post(`/api/onboardings/${id}/cancel`);
   },
+
+  async triggerSeed(quantity: number): Promise<{ message: string }> {
+    return apiClient.post('/api/admin/seed', { quantity });
+  },
 };
