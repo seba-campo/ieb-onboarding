@@ -5,6 +5,11 @@ import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap, Settings } 
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { formatAge, formatDate, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
 import { OnboardingInspector } from './OnboardingInspector';
+import {
+  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
+  ReferenceLine, Cell,
+} from 'recharts';
 
 const QueueTable: React.FC<{
   rows: OnboardingRecord[];
@@ -197,6 +202,22 @@ const QueueTable: React.FC<{
   );
 };
 
+const FUNNEL_COLORS = [
+  '#4338ca', '#2563eb', '#0284c7', '#06b6d4',
+  '#10b981', '#16a34a', '#15803d', '#166534',
+];
+
+const STEP_SHORT: Record<string, string> = {
+  identity_verification: 'Identidad',
+  email_confirmation:    'Email OTP',
+  phone_verification:    'SMS OTP',
+  document_upload:       'Documentos',
+  selfie_check:          'Biometría',
+  risk_scoring:          'Riesgo',
+  account_creation:      'Cuenta CVU',
+  welcome_kit:           'Bienvenida',
+};
+
 export const AdminDashboard: React.FC = () => {
   const { metrics, connected, error, handleStressTest, isSeedPending, isSeedSuccess, seedMessage } =
     useDashboardStream();
@@ -207,6 +228,23 @@ export const AdminDashboard: React.FC = () => {
   const [dateTo, setDateTo]     = useState('');
   const [order, setOrder]       = useState<'ASC' | 'DESC'>('DESC');
   const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory({ dateFrom, dateTo, order });
+
+  const funnelData = (metrics?.funnel ?? []).map((item, idx) => ({
+    name: STEP_SHORT[item.step_name] ?? formatName(item.step_name),
+    paso: `P${idx + 1}`,
+    value: Number(item.count),
+    fill: FUNNEL_COLORS[idx % FUNNEL_COLORS.length],
+  }));
+
+  const errorData = (metrics?.errorRates ?? []).map((item) => ({
+    name: STEP_SHORT[item.step_name] ?? formatName(item.step_name),
+    pct: Number(item.error_rate_pct),
+  }));
+
+  const timesData = (metrics?.averageTimes ?? []).map((item) => ({
+    name: STEP_SHORT[item.step_name] ?? formatName(item.step_name),
+    ms: item.avg_duration_ms,
+  }));
 
   return (
     <div
@@ -469,171 +507,117 @@ export const AdminDashboard: React.FC = () => {
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}
       >
         {/* Funnel */}
-        <div style={{ border: '1px solid #eee', padding: '1.5rem', borderRadius: '8px' }}>
+        <div style={{ border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}>
           <h3
-            style={{ margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
           >
-            <ShieldCheck style={{ color: '#137333' }} /> Funnel de Pasos Completados
+            <ShieldCheck style={{ color: '#137333', width: 18, height: 18 }} /> Funnel de Pasos Completados
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {metrics?.funnel.map((item) => (
-              <div key={item.step_name}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.85rem',
-                    marginBottom: '4px',
-                  }}
-                >
-                  <strong>{formatName(item.step_name)}</strong>
-                  <span>{item.count} usuarios</span>
-                </div>
-                <div
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#eee',
-                    borderRadius: '4px',
-                    height: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${Math.min(item.count * 10, 100)}%`,
-                      backgroundColor: '#137333',
-                      borderRadius: '4px',
-                      height: '100%',
-                      transition: 'width 0.5s ease',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            {(!metrics || metrics.funnel.length === 0) && (
-              <p style={{ color: '#888' }}>Esperando transacciones vivas...</p>
-            )}
-          </div>
+          {funnelData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={270}>
+              <BarChart data={funnelData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="paso" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={44}
+                  tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                />
+                <ChartTooltip
+                  formatter={(v: number) => [`${v} completados`]}
+                  labelFormatter={(_l: string, payload: { payload?: { name?: string } }[]) =>
+                    payload?.[0]?.payload?.name ?? _l
+                  }
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={44}>
+                  {funnelData.map((_, idx) => (
+                    <Cell key={idx} fill={FUNNEL_COLORS[idx % FUNNEL_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Esperando transacciones vivas...</p>
+          )}
         </div>
 
         {/* Error rates */}
-        <div style={{ border: '1px solid #eee', padding: '1.5rem', borderRadius: '8px' }}>
+        <div style={{ border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}>
           <h3
-            style={{ margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
           >
-            <AlertTriangle style={{ color: '#d93025' }} /> Historial de Frecuencia de Fallos (%)
+            <AlertTriangle style={{ color: '#d93025', width: 18, height: 18 }} /> Tasa de Fallos por Paso (%)
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {metrics?.errorRates.map((item) => (
-              <div key={item.step_name}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.85rem',
-                    marginBottom: '4px',
-                  }}
-                >
-                  <strong>{formatName(item.step_name)}</strong>
-                  <span
-                    style={{
-                      color: item.error_rate_pct > 30 ? '#d93025' : '#666',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {item.error_rate_pct}%
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#eee',
-                    borderRadius: '4px',
-                    height: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${item.error_rate_pct}%`,
-                      backgroundColor: '#d93025',
-                      borderRadius: '4px',
-                      height: '100%',
-                      transition: 'width 0.5s ease',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            {(!metrics || metrics.errorRates.length === 0) && (
-              <p style={{ color: '#888' }}>Sin alertas de errores registradas.</p>
-            )}
-          </div>
+          {errorData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={errorData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: '#374151' }} tickLine={false} axisLine={false} />
+                <ChartTooltip
+                  formatter={(v: number) => [`${v.toFixed(1)}%`, 'Tasa de error']}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
+                />
+                <ReferenceLine
+                  x={30}
+                  stroke="#d93025"
+                  strokeDasharray="5 3"
+                  label={{ value: 'Umbral 30%', position: 'insideTopRight', fill: '#d93025', fontSize: 10 }}
+                />
+                <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                  {errorData.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.pct > 30 ? '#ef4444' : '#22c55e'} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Sin datos de error registrados.</p>
+          )}
         </div>
       </div>
 
       {/* Tiempos promedio */}
       <div
-        style={{
-          marginTop: '2rem',
-          border: '1px solid #eee',
-          padding: '1.5rem',
-          borderRadius: '8px',
-        }}
+        style={{ marginTop: '2rem', border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}
       >
-        <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Clock style={{ color: '#f4b400' }} /> Rendimiento y Latencia Promedio por Proveedor
+        <h3
+          style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
+        >
+          <Clock style={{ color: '#f59e0b', width: 18, height: 18 }} /> Latencia Promedio por Paso
+          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: '#f59e0b' }}>
+            — SLA: 2000 ms
+          </span>
         </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.5rem' }}>
-          <thead>
-            <tr
-              style={{
-                textAlign: 'left',
-                borderBottom: '2px solid #eee',
-                color: '#666',
-                fontSize: '0.9rem',
-              }}
-            >
-              <th style={{ padding: '0.75rem' }}>PASO OPERATIVO</th>
-              <th style={{ padding: '0.75rem' }}>TIEMPO PROMEDIO (MS)</th>
-              <th style={{ padding: '0.75rem' }}>ESTADO ACORDADO (SLA)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics?.averageTimes.map((item) => (
-              <tr
-                key={item.step_name}
-                style={{ borderBottom: '1px solid #eee', fontSize: '0.9rem' }}
-              >
-                <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>
-                  {formatName(item.step_name)}
-                </td>
-                <td style={{ padding: '0.75rem', color: '#0070f3', fontWeight: 'bold' }}>
-                  {item.avg_duration_ms} ms
-                </td>
-                <td style={{ padding: '0.75rem' }}>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: item.avg_duration_ms > 2000 ? '#fef7e0' : '#e6f4ea',
-                      color: item.avg_duration_ms > 2000 ? '#b06000' : '#137333',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {item.avg_duration_ms > 2000 ? 'LATENCIA ALTA' : 'ÓPTIMO'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-            {(!metrics || metrics.averageTimes.length === 0) && (
-              <tr>
-                <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>
-                  Esperando consolidación de métricas en Neon...
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {timesData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={timesData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+              <XAxis type="number" unit=" ms" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: '#374151' }} tickLine={false} axisLine={false} />
+              <ChartTooltip
+                formatter={(v: number) => [`${v} ms`, 'Latencia promedio']}
+                contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <ReferenceLine
+                x={2000}
+                stroke="#f59e0b"
+                strokeDasharray="5 3"
+                label={{ value: 'SLA 2000ms', position: 'insideTopRight', fill: '#f59e0b', fontSize: 10 }}
+              />
+              <Bar dataKey="ms" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                {timesData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.ms >= 2000 ? '#f59e0b' : '#3b82f6'} fillOpacity={0.85} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Esperando consolidación de métricas en Neon...</p>
+        )}
       </div>
 
       {/* Modal de configuración */}
