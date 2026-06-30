@@ -16,7 +16,7 @@ Link al deploy: https://onboarding-frontend-ec48.onrender.com/
 | Cola de trabajos | PostgreSQL (Database Queue)      | Sin Redis ni BullMQ — ver decisión de arquitectura más abajo     |
 | Tiempo real      | Server-Sent Events (SSE)         | Unidireccional, sin overhead de WebSockes.                       |
 | Alertas          | Slack Incoming Webhooks          | Integración directa, sin broker externo                          |
-| Frontend         | React 19 + Vite + TanStack Query | SPA liviana con polling controlado y streaming SSE               |
+| Frontend         | React 19 + Vite + TanStack Query + Rechart | SPA liviana con polling controlado y streaming SSE               |
 
 ---
 
