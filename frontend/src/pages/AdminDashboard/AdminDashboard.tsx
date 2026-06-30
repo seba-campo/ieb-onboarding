@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useDashboardStream, useOnboardingHistory } from './useAdminDashboard';
 import { OnboardingRecord } from '../../types/analytics.types';
-import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap } from 'lucide-react';
+import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap, Settings } from 'lucide-react';
+import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { formatAge, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
 import { OnboardingInspector } from './OnboardingInspector';
 
@@ -198,6 +199,7 @@ export const AdminDashboard: React.FC = () => {
     useDashboardStream();
   const [tableView, setTableView] = useState<'active' | 'history'>('active');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
   const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory();
 
   return (
@@ -220,24 +222,45 @@ export const AdminDashboard: React.FC = () => {
             Monitoreo analítico del motor de onboarding en tiempo real
           </p>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 1rem',
-            borderRadius: '20px',
-            backgroundColor: connected ? '#e6f4ea' : '#fce8e6',
-            color: connected ? '#137333' : '#c5221f',
-          }}
-        >
-          <RefreshCw
-            className={connected ? 'animate-spin' : ''}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-            {connected ? 'STREAM ACTIVO' : 'DESCONECTADO'}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            onClick={() => setConfigOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '20px',
+              border: '1px solid #e5e7eb',
+              backgroundColor: '#f9fafb',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            <Settings style={{ width: '15px', height: '15px' }} />
+            Configuraciones
+          </button>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '20px',
+              backgroundColor: connected ? '#e6f4ea' : '#fce8e6',
+              color: connected ? '#137333' : '#c5221f',
+            }}
+          >
+            <RefreshCw
+              className={connected ? 'animate-spin' : ''}
+              style={{ width: '16px', height: '16px' }}
+            />
+            <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+              {connected ? 'STREAM ACTIVO' : 'DESCONECTADO'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -542,6 +565,87 @@ export const AdminDashboard: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Modal de configuración */}
+      {configOpen && (
+        <div
+          onClick={() => setConfigOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              width: '100%',
+              maxWidth: '780px',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '1.1rem',
+                }}
+              >
+                <Settings style={{ width: '18px', color: '#6b7280' }} />
+                Configuración de Umbrales de Alerta
+              </h2>
+
+              <button
+                onClick={() => setConfigOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.4rem',
+                  cursor: 'pointer',
+                  color: '#9ca3af',
+                  lineHeight: 1,
+                  padding: '0 0.25rem',
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div>
+              <p
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  color: '#9ca3af',
+                  lineHeight: 1,
+                }}
+              >
+                Alertas enviadas al canal #alerts
+              </p>
+            </div>
+            <ConfigPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
