@@ -3,7 +3,7 @@ import { useDashboardStream, useOnboardingHistory } from './useAdminDashboard';
 import { OnboardingRecord } from '../../types/analytics.types';
 import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap, Settings } from 'lucide-react';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
-import { formatAge, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
+import { formatAge, formatDate, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
 import { OnboardingInspector } from './OnboardingInspector';
 
 const QueueTable: React.FC<{
@@ -38,7 +38,7 @@ const QueueTable: React.FC<{
             <th style={thStyle}>ESTADO</th>
             <th style={thStyle}>AVANCE</th>
             <th style={thStyle}>ETAPA ACTUAL</th>
-            <th style={thStyle}>ANTIGÜEDAD</th>
+            <th style={thStyle}>FECHA CREACIÓN</th>
             <th style={thStyle}>INTENTOS</th>
             <th style={thStyle}>MODO</th>
           </tr>
@@ -144,9 +144,12 @@ const QueueTable: React.FC<{
                     {STEP_LABELS[row.currentStep] ?? `Paso ${row.currentStep}`}
                   </td>
 
-                  {/* Antigüedad */}
-                  <td style={{ ...tdStyle, color: '#6b7280', whiteSpace: 'nowrap' }}>
-                    {formatAge(row.createdAt)}
+                  {/* Fecha creación */}
+                  <td
+                    title={`Hace ${formatAge(row.createdAt)}`}
+                    style={{ ...tdStyle, color: '#374151', whiteSpace: 'nowrap', fontSize: '0.82rem', fontFamily: 'monospace' }}
+                  >
+                    {formatDate(row.createdAt)}
                   </td>
 
                   {/* Intentos */}
@@ -200,7 +203,10 @@ export const AdminDashboard: React.FC = () => {
   const [tableView, setTableView] = useState<'active' | 'history'>('active');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
-  const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory();
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
+  const [order, setOrder]       = useState<'ASC' | 'DESC'>('DESC');
+  const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory({ dateFrom, dateTo, order });
 
   return (
     <div
@@ -350,26 +356,90 @@ export const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            {(['active', 'history'] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => setTableView(view)}
-                style={{
-                  padding: '0.35rem 0.9rem',
-                  borderRadius: '999px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  backgroundColor: tableView === view ? '#0070f3' : '#f3f4f6',
-                  color: tableView === view ? '#fff' : '#6b7280',
-                  transition: 'background-color 0.15s',
-                }}
-              >
-                {view === 'active' ? 'Cola activa' : 'Historial'}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Filtros de fecha — solo visibles en historial */}
+            {tableView === 'history' && (
+              <>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  style={{
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: '0.8rem',
+                    color: '#374151',
+                  }}
+                />
+                <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>—</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  style={{
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: '0.8rem',
+                    color: '#374151',
+                  }}
+                />
+                <button
+                  onClick={() => setOrder((o) => (o === 'DESC' ? 'ASC' : 'DESC'))}
+                  title={`Orden actual: ${order}`}
+                  style={{
+                    padding: '0.3rem 0.7rem',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f9fafb',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: '#374151',
+                  }}
+                >
+                  {order === 'DESC' ? '↓ Más reciente' : '↑ Más antiguo'}
+                </button>
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(''); setDateTo(''); }}
+                    style={{
+                      padding: '0.3rem 0.7rem',
+                      borderRadius: '6px',
+                      border: '1px solid #e5e7eb',
+                      backgroundColor: '#f9fafb',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      color: '#6b7280',
+                    }}
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </>
+            )}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['active', 'history'] as const).map((view) => (
+                <button
+                  key={view}
+                  onClick={() => setTableView(view)}
+                  style={{
+                    padding: '0.35rem 0.9rem',
+                    borderRadius: '999px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    backgroundColor: tableView === view ? '#0070f3' : '#f3f4f6',
+                    color: tableView === view ? '#fff' : '#6b7280',
+                    transition: 'background-color 0.15s',
+                  }}
+                >
+                  {view === 'active' ? 'Cola activa' : 'Historial'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         {tableView === 'history' && historyLoading ? (

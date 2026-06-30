@@ -29,10 +29,13 @@ export const onboardingController = {
 
   async list(req: Request, res: Response) {
     try {
-      const status = typeof req.query.status === 'string' ? req.query.status : undefined;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
-      const results = await onboardingService.listOnboardings({ status, limit, offset });
+      const status   = typeof req.query.status   === 'string' ? req.query.status   : undefined;
+      const dateFrom = typeof req.query.dateFrom  === 'string' ? req.query.dateFrom  : undefined;
+      const dateTo   = typeof req.query.dateTo    === 'string' ? req.query.dateTo    : undefined;
+      const order    = req.query.order === 'ASC'  ? 'ASC' : 'DESC';
+      const limit    = req.query.limit  ? parseInt(req.query.limit  as string, 10) : 50;
+      const offset   = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+      const results  = await onboardingService.listOnboardings({ status, limit, offset, dateFrom, dateTo, order });
       return res.status(200).json(results);
     } catch (error) {
       console.error('Error en onboardingController.list:', error);

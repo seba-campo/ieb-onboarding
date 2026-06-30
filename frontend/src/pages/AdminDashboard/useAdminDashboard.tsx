@@ -65,11 +65,22 @@ export const useDashboardStream = () => {
   };
 };
 
-export const useOnboardingHistory = () => {
+export interface HistoryFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  order?: 'ASC' | 'DESC';
+}
+
+export const useOnboardingHistory = (filters: HistoryFilters = {}) => {
+  const { dateFrom, dateTo, order = 'DESC' } = filters;
+
   return useQuery<OnboardingRecord[]>({
-    queryKey: ['onboarding-history'],
+    queryKey: ['onboarding-history', dateFrom, dateTo, order],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/api/onboardings?limit=50`);
+      const params = new URLSearchParams({ limit: '50', order });
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo)   params.set('dateTo', dateTo);
+      const res = await fetch(`${API_BASE_URL}/api/onboardings?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch history');
       return res.json();
     },

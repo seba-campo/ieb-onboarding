@@ -5,6 +5,9 @@ export interface ListOnboardingsOptions {
   status?: string;
   limit?: number;
   offset?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  order?: 'ASC' | 'DESC';
 }
 
 export const onboardingService = {

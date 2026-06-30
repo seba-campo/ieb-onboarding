@@ -9,6 +9,12 @@ export function formatAge(createdAt: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+export function formatDate(isoString: string): string {
+  const d = new Date(isoString);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export const formatName = (name: string) => name.replace('_', ' ').toUpperCase();
 
 export const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {

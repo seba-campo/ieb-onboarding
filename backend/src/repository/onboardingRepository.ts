@@ -37,22 +37,38 @@ export const onboardingRepository = {
     status?: string;
     limit?: number;
     offset?: number;
+    dateFrom?: string;
+    dateTo?: string;
+    order?: 'ASC' | 'DESC';
   }): Promise<OnboardingResponseDTO[]> {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
+    const order = options?.order === 'ASC' ? 'ASC' : 'DESC';
     const values: any[] = [limit, offset];
-    let whereClause = '';
+    const conditions: string[] = [];
+
     if (options?.status) {
       values.push(options.status);
-      whereClause = `WHERE status = $${values.length}`;
+      conditions.push(`status = $${values.length}`);
     }
+    if (options?.dateFrom) {
+      values.push(options.dateFrom);
+      conditions.push(`created_at >= $${values.length}`);
+    }
+    if (options?.dateTo) {
+      values.push(options.dateTo);
+      conditions.push(`created_at <= $${values.length}`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const query = `
       SELECT id, status, current_step AS "currentStep", attempts,
         next_attempt_at AS "nextAttemptAt", config, payload,
         created_at AS "createdAt", updated_at AS "updatedAt"
       FROM onboardings
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY created_at ${order}
       LIMIT $1 OFFSET $2;
     `;
     const { rows } = await db.query(query, values);
