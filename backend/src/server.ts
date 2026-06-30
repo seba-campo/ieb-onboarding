@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import onboardingRoutes from './routes/onboardingRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import configRoutes from './routes/configRoutes';
 import { onboardingWorker } from './workers/onboardingWorker';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
@@ -25,6 +26,7 @@ app.use(express.json());
 // Inyección de rutas
 app.use('/api', onboardingRoutes);
 app.use('/api', analyticsRoutes);
+app.use('/api', configRoutes);
 
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({

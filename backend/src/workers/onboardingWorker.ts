@@ -1,5 +1,6 @@
 import { db } from '../repository/db';
 import { stepProcessor } from '../service/stepProcessor.service';
+import { alertService } from '../service/alert.service';
 
 export class OnboardingWorker {
   private isRunning: boolean = false;
@@ -23,6 +24,11 @@ export class OnboardingWorker {
 
     this.isRunning = true;
     console.log('[⚙️ Worker]: Motor de procesamiento concurrente inicializado.');
+
+    // Verificación periódica de condiciones de alerta (cada 60 segundos)
+    setInterval(() => alertService.checkAll(), 60_000);
+    console.log('[🔔 Worker]: Monitor de alertas activo (intervalo: 60s).');
+
     this.loop();
   }
 
