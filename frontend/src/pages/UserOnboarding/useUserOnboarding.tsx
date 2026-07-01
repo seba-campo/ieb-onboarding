@@ -25,7 +25,7 @@ export const useOnboarding = (): UseOnboardingReturn => {
   const queryClient = useQueryClient();
 
   const {
-    mutate: _startMutation,
+    mutate: startOnboardingMutation,
     data: createdOnboarding,
     isPending,
     error: mutationError,
@@ -38,7 +38,7 @@ export const useOnboarding = (): UseOnboardingReturn => {
 
   // Wrapper que lee isManualMode en el momento del click, no en el momento del render
   const startNewOnboarding = (optionalSteps: string[]) => {
-    _startMutation({ optionalSteps, isManual: isManualMode });
+    startOnboardingMutation({ optionalSteps, isManual: isManualMode });
   };
 
   const { data: onboardingStatus, error: statusError } = useQuery<OnboardingResponse, Error>({

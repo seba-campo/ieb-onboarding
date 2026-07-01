@@ -8,14 +8,14 @@ Link al deploy: https://onboarding-frontend-ec48.onrender.com/
 
 ## Stack
 
-| Capa             | Tecnología                       | Decisión                                                         |
-| ---------------- | -------------------------------- | ---------------------------------------------------------------- |
-| Backend          | Node.js + Express 5 + TypeScript | Bajo overhead, I/O no bloqueante ideal para concurrencia masiva  |
-| Base de datos    | Neon (PostgreSQL Serverless)     | Connection pooler en modo transacción; SKIP LOCKED nativo        |
-| ORM / Driver     | `pg` (driver nativo)             | Raw SQL — control total sobre las queries de bloqueo concurrente |
-| Cola de trabajos | PostgreSQL (Database Queue)      | Sin Redis ni BullMQ — ver decisión de arquitectura más abajo     |
-| Tiempo real      | Server-Sent Events (SSE)         | Unidireccional, sin overhead de WebSockes.                       |
-| Alertas          | Slack Incoming Webhooks          | Integración directa, sin broker externo                          |
+| Capa             | Tecnología                                 | Decisión                                                         |
+| ---------------- | ------------------------------------------ | ---------------------------------------------------------------- |
+| Backend          | Node.js + Express 5 + TypeScript           | Bajo overhead, I/O no bloqueante ideal para concurrencia masiva  |
+| Base de datos    | Neon (PostgreSQL Serverless)               | Connection pooler en modo transacción; SKIP LOCKED nativo        |
+| ORM / Driver     | `pg` (driver nativo)                       | Raw SQL — control total sobre las queries de bloqueo concurrente |
+| Cola de trabajos | PostgreSQL (Database Queue)                | Sin Redis ni BullMQ — ver decisión de arquitectura más abajo     |
+| Tiempo real      | Server-Sent Events (SSE)                   | Unidireccional, sin overhead de WebSockes.                       |
+| Alertas          | Slack Incoming Webhooks                    | Integración directa, sin broker externo                          |
 | Frontend         | React 19 + Vite + TanStack Query + Rechart | SPA liviana con polling controlado y streaming SSE               |
 
 ---
@@ -99,7 +99,6 @@ La clave es `FOR UPDATE SKIP LOCKED`: si otro worker ya tomó esa fila, la salt
 
 <img width="959" height="676" alt="image" src="https://github.com/user-attachments/assets/47c211f7-2010-4069-bae9-ad2338fa3611" />
 
-
 ### Los 8 pasos del onboarding
 
 | #   | Nombre interno          | Descripción                       | Simulado? |
@@ -146,19 +145,16 @@ Cada request HTTP recibe un `correlationId` UUID (generado en el middleware o 
 ## Cómo correr el proyecto
 
 ```bash
-# Backend
-cd backend
-npm install
-npm run dev          # tsx watch — hot reload
+#Se debe estar posicionado en .../ieb-onboarding
 
-# Frontend
-cd frontend
-npm install
-npm run dev          # Vite dev server en :5173
+yarn install-all
+#O con npm
+npm run install-all
 
-# Test de concurrencia (inyecta 500 onboardings en ráfagas de 50)
-cd backend
-npm run test:concurrency
+#Iniciar el servidor local
+yarn dev
+#O con npm
+npm run dev
 ```
 
 ---
@@ -174,4 +170,5 @@ Link a la documentacion Postman: https://documenter.getpostman.com/view/23923667
 - **TanStack Query** para el historial: el `queryKey` incluye los filtros, lo que garantiza refetch automático al cambiar fechas u orden
 - **SSE nativo** (`EventSource`) para el dashboard activo, sin librerías extra
 - **Custom hooks** colocados junto al componente que los usa (`useConfigPanel.ts` al lado de `ConfigPanel/)
+  **Rechart** para los graficos del dashboard.
 - **Inline styles** en toda la UI — sin Tailwind ni CSS modules — para máxima portabilidad y cero configuración de build adicional.
