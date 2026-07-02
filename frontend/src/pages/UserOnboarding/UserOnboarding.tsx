@@ -280,184 +280,253 @@ export const UserOnboarding: React.FC = () => {
     return <Circle className="text-gray-300 w-5 h-5" />;
   };
 
+  const cardStyle: React.CSSProperties = {
+    padding: '1.25rem',
+    backgroundColor: 'white',
+    border: '1px solid #eee',
+    borderRadius: '8px',
+  };
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '540px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+    <div style={{ padding: '2rem', maxWidth: '920px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       <h2 style={{ marginBottom: '0.25rem' }}>Simulador de Onboarding Financiero</h2>
       <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
         Interfaz del usuario final — TanStack Query + Axios + Express Worker
       </p>
 
-      {/* Toggle modo interactivo */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-          padding: '0.75rem 1rem',
-          backgroundColor: isManualMode ? '#eff6ff' : '#f9fafb',
-          border: `1px solid ${isManualMode ? '#bfdbfe' : '#e5e7eb'}`,
-          borderRadius: '8px',
-        }}
-      >
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isManualMode}
-          onClick={() => setIsManualMode(!isManualMode)}
-          disabled={!!onboarding && !['COMPLETED', 'CANCELLED'].includes(onboarding.status)}
-          style={{
-            width: '44px',
-            height: '24px',
-            borderRadius: '12px',
-            border: 'none',
-            backgroundColor: isManualMode ? '#2563eb' : '#d1d5db',
-            cursor:
-              !!onboarding && !['COMPLETED', 'CANCELLED'].includes(onboarding.status)
-                ? 'not-allowed'
-                : 'pointer',
-            position: 'relative',
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: '2px',
-              left: isManualMode ? '22px' : '2px',
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              backgroundColor: 'white',
-              transition: 'left 0.15s',
-            }}
-          />
-        </button>
-        <div>
-          <span
-            style={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              color: isManualMode ? '#1d4ed8' : '#374151',
-            }}
-          >
-            Modo Interactivo
-          </span>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
-            {isManualMode
-              ? 'Cada paso pedirá datos reales antes de avanzar'
-              : 'El Worker ejecuta todos los pasos automáticamente'}
-          </p>
-        </div>
-      </div>
-
-      <button
-        onClick={handleStart}
-        disabled={!canStart}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1.5rem',
-          backgroundColor: canStart ? '#0070f3' : '#93c5fd',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          fontSize: '1rem',
-          cursor: canStart ? 'pointer' : 'not-allowed',
-          marginBottom: '1rem',
-        }}
-      >
-        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className="w-4 h-4" />}
-        Iniciar Nuevo Registro
-      </button>
-
-      {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>⚠️ {error}</p>}
-
-      {onboarding && (
+      {/* Toggle modo interactivo + inicio */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <div
           style={{
-            marginBottom: '1rem',
-            padding: '0.6rem 1rem',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '6px',
-            fontSize: '0.85rem',
-          }}
-        >
-          <span style={{ color: '#888' }}>ID: </span>
-          <span style={{ fontFamily: 'monospace', color: '#444' }}>{onboarding.id}</span>
-          {'  ·  '}
-          <span style={{ color: '#888' }}>Estado: </span>
-          <strong>{onboarding.status}</strong>
-        </div>
-      )}
-
-      {/* Formulario del paso actual (modo manual + PAUSED) */}
-      {isAwaitingInput && onboarding && (
-        <div
-          style={{
-            marginBottom: '1.5rem',
-            padding: '1rem',
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            flex: 1,
+            padding: '0.75rem 1rem',
+            backgroundColor: isManualMode ? '#eff6ff' : '#f9fafb',
+            border: `1px solid ${isManualMode ? '#bfdbfe' : '#e5e7eb'}`,
             borderRadius: '8px',
           }}
         >
-          <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem', color: '#1d4ed8' }}>
-            Paso {onboarding.currentStep} — {STEP_TITLES[onboarding.currentStep]}
-          </h3>
-          <p style={{ margin: '0 0 1rem', fontSize: '0.82rem', color: '#3b82f6' }}>
-            Completá los datos para continuar el onboarding
-          </p>
-          <StepForm
-            key={onboarding.currentStep}
-            stepNumber={onboarding.currentStep}
-            onSubmit={handleAdvance}
-            isSubmitting={isAdvancing}
-          />
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {STEP_NAMES.map((name, index) => {
-          const stepNumber = index + 1;
-          const isCurrent = onboarding?.currentStep === stepNumber;
-          const isPaused = isCurrent && onboarding?.status === 'PAUSED';
-
-          return (
-            <div
-              key={name}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isManualMode}
+            onClick={() => setIsManualMode(!isManualMode)}
+            disabled={!!onboarding && !['COMPLETED', 'CANCELLED'].includes(onboarding.status)}
+            style={{
+              width: '44px',
+              height: '24px',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: isManualMode ? '#2563eb' : '#d1d5db',
+              cursor:
+                !!onboarding && !['COMPLETED', 'CANCELLED'].includes(onboarding.status)
+                  ? 'not-allowed'
+                  : 'pointer',
+              position: 'relative',
+              flexShrink: 0,
+            }}
+          >
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                padding: '0.75rem',
-                borderRadius: '6px',
-                border: isPaused
-                  ? '1px solid #f59e0b'
-                  : isCurrent
-                    ? '1px solid #0070f3'
-                    : '1px solid #eee',
-                backgroundColor: isPaused ? '#fffbeb' : isCurrent ? '#f0f7ff' : 'white',
+                position: 'absolute',
+                top: '2px',
+                left: isManualMode ? '22px' : '2px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                backgroundColor: 'white',
+                transition: 'left 0.15s',
+              }}
+            />
+          </button>
+          <div>
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                color: isManualMode ? '#1d4ed8' : '#374151',
               }}
             >
-              {renderStepStatus(index)}
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.78rem', color: '#888', display: 'block' }}>
-                  Paso {stepNumber}
-                </span>
-                <strong style={{ textTransform: 'capitalize', fontSize: '0.9rem' }}>
-                  {name.replace(/_/g, ' ')}
-                </strong>
-              </div>
-              {isPaused && (
-                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: 600 }}>
-                  Esperando datos
-                </span>
-              )}
+              Modo Interactivo
+            </span>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
+              {isManualMode
+                ? 'Cada paso pedirá datos reales antes de avanzar'
+                : 'El Worker ejecuta todos los pasos automáticamente'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleStart}
+          disabled={!canStart}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: canStart ? '#0070f3' : '#93c5fd',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            cursor: canStart ? 'pointer' : 'not-allowed',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className="w-4 h-4" />}
+          Iniciar Nuevo Registro
+        </button>
+      </div>
+
+      {error && <p style={{ color: 'red', marginBottom: '1rem' }}>⚠️ {error}</p>}
+
+      {/* Layout principal: pasos a la izquierda, contenido a la derecha */}
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+        <aside style={{ ...cardStyle, width: '260px', flexShrink: 0, padding: '1rem' }}>
+          <h3 style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Pasos
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {STEP_NAMES.map((name, index) => {
+              const stepNumber = index + 1;
+              const isLast = index === STEP_NAMES.length - 1;
+              const isCurrent = onboarding?.currentStep === stepNumber;
+              const isPaused = isCurrent && onboarding?.status === 'PAUSED';
+              const isDone =
+                !!onboarding &&
+                (onboarding.currentStep > stepNumber || onboarding.status === 'COMPLETED');
+
+              return (
+                <div key={name} style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    {renderStepStatus(index)}
+                    {!isLast && (
+                      <div
+                        style={{
+                          width: '2px',
+                          flex: 1,
+                          minHeight: '20px',
+                          margin: '4px 0',
+                          backgroundColor: isDone ? '#22c55e' : '#e5e7eb',
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div style={{ paddingBottom: isLast ? 0 : '1.25rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#888', display: 'block' }}>
+                      Paso {stepNumber}
+                    </span>
+                    <strong
+                      style={{
+                        fontSize: '0.85rem',
+                        color: isCurrent ? '#1d4ed8' : '#111827',
+                      }}
+                    >
+                      {name.replace(/_/g, ' ')}
+                    </strong>
+                    {isPaused && (
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '0.72rem',
+                          color: '#d97706',
+                          fontWeight: 600,
+                          marginTop: '0.15rem',
+                        }}
+                      >
+                        Esperando datos
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        <main style={{ flex: 1, minWidth: 0 }}>
+          {!onboarding && (
+            <div style={{ ...cardStyle, textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>
+              Iniciá un nuevo registro para ver el progreso acá.
             </div>
-          );
-        })}
+          )}
+
+          {onboarding && (
+            <>
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.6rem 1rem',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <span style={{ color: '#888' }}>ID: </span>
+                <span style={{ fontFamily: 'monospace', color: '#444' }}>{onboarding.id}</span>
+                {'  ·  '}
+                <span style={{ color: '#888' }}>Estado: </span>
+                <strong>{onboarding.status}</strong>
+              </div>
+
+              {isAwaitingInput ? (
+                <div style={{ ...cardStyle, backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem', color: '#1d4ed8' }}>
+                    Paso {onboarding.currentStep} — {STEP_TITLES[onboarding.currentStep]}
+                  </h3>
+                  <p style={{ margin: '0 0 1rem', fontSize: '0.82rem', color: '#3b82f6' }}>
+                    Completá los datos para continuar el onboarding
+                  </p>
+                  <StepForm
+                    key={onboarding.currentStep}
+                    stepNumber={onboarding.currentStep}
+                    onSubmit={handleAdvance}
+                    isSubmitting={isAdvancing}
+                  />
+                </div>
+              ) : (
+                <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {onboarding.status === 'COMPLETED' && (
+                    <>
+                      <CheckCircle2 className="text-green-500 w-5 h-5" />
+                      <span style={{ fontSize: '0.9rem', color: '#111827' }}>
+                        ¡Onboarding completado con éxito!
+                      </span>
+                    </>
+                  )}
+                  {onboarding.status === 'FAILED' && (
+                    <>
+                      <XCircle className="text-red-500 w-5 h-5" />
+                      <span style={{ fontSize: '0.9rem', color: '#111827' }}>
+                        Ocurrió un error en “{STEP_TITLES[onboarding.currentStep]}”.
+                      </span>
+                    </>
+                  )}
+                  {onboarding.status === 'CANCELLED' && (
+                    <>
+                      <XCircle className="text-gray-400 w-5 h-5" />
+                      <span style={{ fontSize: '0.9rem', color: '#111827' }}>
+                        El onboarding fue cancelado.
+                      </span>
+                    </>
+                  )}
+                  {!['COMPLETED', 'FAILED', 'CANCELLED'].includes(onboarding.status) && (
+                    <>
+                      <Loader2 className="text-blue-500 w-5 h-5 animate-spin" />
+                      <span style={{ fontSize: '0.9rem', color: '#111827' }}>
+                        Procesando “{STEP_TITLES[onboarding.currentStep]}” automáticamente…
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </main>
       </div>
     </div>
   );

@@ -3,12 +3,24 @@ import { useDashboardStream, useOnboardingHistory } from './useAdminDashboard';
 import { OnboardingRecord } from '../../types/analytics.types';
 import { ShieldCheck, RefreshCw, AlertTriangle, Clock, Loader2, Zap, Settings } from 'lucide-react';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
-import { formatAge, formatDate, formatName, STATUS_STYLES, STEP_LABELS } from './utilsAdminDashboard';
+import {
+  formatAge,
+  formatDate,
+  formatName,
+  STATUS_STYLES,
+  STEP_LABELS,
+} from './utilsAdminDashboard';
 import { OnboardingInspector } from './OnboardingInspector';
 import {
   ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
-  ReferenceLine, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  ReferenceLine,
+  Cell,
 } from 'recharts';
 
 const QueueTable: React.FC<{
@@ -152,7 +164,13 @@ const QueueTable: React.FC<{
                   {/* Fecha creación */}
                   <td
                     title={`Hace ${formatAge(row.createdAt)}`}
-                    style={{ ...tdStyle, color: '#374151', whiteSpace: 'nowrap', fontSize: '0.82rem', fontFamily: 'monospace' }}
+                    style={{
+                      ...tdStyle,
+                      color: '#374151',
+                      whiteSpace: 'nowrap',
+                      fontSize: '0.82rem',
+                      fontFamily: 'monospace',
+                    }}
                   >
                     {formatDate(row.createdAt)}
                   </td>
@@ -203,19 +221,25 @@ const QueueTable: React.FC<{
 };
 
 const FUNNEL_COLORS = [
-  '#4338ca', '#2563eb', '#0284c7', '#06b6d4',
-  '#10b981', '#16a34a', '#15803d', '#166534',
+  '#4338ca',
+  '#2563eb',
+  '#0284c7',
+  '#06b6d4',
+  '#10b981',
+  '#16a34a',
+  '#15803d',
+  '#166534',
 ];
 
 const STEP_SHORT: Record<string, string> = {
   identity_verification: 'Identidad',
-  email_confirmation:    'Email OTP',
-  phone_verification:    'SMS OTP',
-  document_upload:       'Documentos',
-  selfie_check:          'Biometría',
-  risk_scoring:          'Riesgo',
-  account_creation:      'Cuenta CVU',
-  welcome_kit:           'Bienvenida',
+  email_confirmation: 'Email OTP',
+  phone_verification: 'SMS OTP',
+  document_upload: 'Documentos',
+  selfie_check: 'Biometría',
+  risk_scoring: 'Riesgo',
+  account_creation: 'Cuenta CVU',
+  welcome_kit: 'Bienvenida',
 };
 
 export const AdminDashboard: React.FC = () => {
@@ -225,9 +249,13 @@ export const AdminDashboard: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo]     = useState('');
-  const [order, setOrder]       = useState<'ASC' | 'DESC'>('DESC');
-  const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory({ dateFrom, dateTo, order });
+  const [dateTo, setDateTo] = useState('');
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const { data: historyRows = [], isLoading: historyLoading } = useOnboardingHistory({
+    dateFrom,
+    dateTo,
+    order,
+  });
 
   const funnelData = (metrics?.funnel ?? []).map((item, idx) => ({
     name: STEP_SHORT[item.step_name] ?? formatName(item.step_name),
@@ -358,43 +386,42 @@ export const AdminDashboard: React.FC = () => {
                 Viendo los primeros 100
               </p>
             )}
+          </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Generador de carga — solo visible en cola activa */}
             {tableView === 'active' && (
-              <div
-                style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}
-              >
+              <>
                 <button
                   onClick={handleStressTest}
                   disabled={isSeedPending}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.25rem',
-                    backgroundColor: '#e01e5a',
+                    gap: '0.4rem',
+                    padding: '0.4rem 0.9rem',
+                    backgroundColor: '#4338ca',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(224,30,90,0.2)',
-                    width: 'auto',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: isSeedPending ? 'not-allowed' : 'pointer',
+                    opacity: isSeedPending ? 0.7 : 1,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <Zap style={{ fill: 'white', width: '16px' }} />
-                  {isSeedPending ? 'Inyectando Carga...' : 'Simular Carga Masiva (100 Onboardings)'}
+                  <Zap style={{ fill: 'white', width: '13px', height: '13px' }} />
+                  {isSeedPending ? 'Inyectando...' : 'Simular Carga (100)'}
                 </button>
 
                 {isSeedSuccess && (
-                  <span style={{ color: '#137333', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  <span style={{ color: '#137333', fontSize: '0.8rem', fontWeight: 600 }}>
                     ✅ {seedMessage}
                   </span>
                 )}
-              </div>
+              </>
             )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             {/* Filtros de fecha — solo visibles en historial */}
             {tableView === 'history' && (
               <>
@@ -441,7 +468,10 @@ export const AdminDashboard: React.FC = () => {
                 </button>
                 {(dateFrom || dateTo) && (
                   <button
-                    onClick={() => { setDateFrom(''); setDateTo(''); }}
+                    onClick={() => {
+                      setDateFrom('');
+                      setDateTo('');
+                    }}
                     style={{
                       padding: '0.3rem 0.7rem',
                       borderRadius: '6px',
@@ -509,21 +539,35 @@ export const AdminDashboard: React.FC = () => {
         {/* Funnel */}
         <div style={{ border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}>
           <h3
-            style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
+            style={{
+              margin: '0 0 1.25rem 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.95rem',
+            }}
           >
-            <ShieldCheck style={{ color: '#137333', width: 18, height: 18 }} /> Funnel de Pasos Completados
+            <ShieldCheck style={{ color: '#137333', width: 18, height: 18 }} /> Funnel de Pasos
+            Completados
           </h3>
           {funnelData.length > 0 ? (
             <ResponsiveContainer width="100%" height={270}>
               <BarChart data={funnelData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="paso" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} />
+                <XAxis
+                  dataKey="paso"
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#9ca3af' }}
                   tickLine={false}
                   axisLine={false}
                   width={44}
-                  tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                  tickFormatter={(v: number) =>
+                    v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
+                  }
                 />
                 <ChartTooltip
                   formatter={(v: number) => [`${v} completados`]}
@@ -540,23 +584,50 @@ export const AdminDashboard: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Esperando transacciones vivas...</p>
+            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>
+              Esperando transacciones vivas...
+            </p>
           )}
         </div>
 
         {/* Error rates */}
         <div style={{ border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}>
           <h3
-            style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
+            style={{
+              margin: '0 0 1.25rem 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.95rem',
+            }}
           >
-            <AlertTriangle style={{ color: '#d93025', width: 18, height: 18 }} /> Tasa de Fallos por Paso (%)
+            <AlertTriangle style={{ color: '#d93025', width: 18, height: 18 }} /> Tasa de Fallos por
+            Paso (%)
           </h3>
           {errorData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={errorData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 0 }}>
+              <BarChart
+                data={errorData}
+                layout="vertical"
+                margin={{ top: 4, right: 28, bottom: 4, left: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: '#374151' }} tickLine={false} axisLine={false} />
+                <XAxis
+                  type="number"
+                  domain={[0, 100]}
+                  unit="%"
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={90}
+                  tick={{ fontSize: 11, fill: '#374151' }}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <ChartTooltip
                   formatter={(v: number) => [`${v.toFixed(1)}%`, 'Tasa de error']}
                   contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
@@ -565,39 +636,80 @@ export const AdminDashboard: React.FC = () => {
                   x={30}
                   stroke="#d93025"
                   strokeDasharray="5 3"
-                  label={{ value: 'Umbral 30%', position: 'insideTopRight', fill: '#d93025', fontSize: 10 }}
+                  label={{
+                    value: 'Umbral 30%',
+                    position: 'insideTopRight',
+                    fill: '#d93025',
+                    fontSize: 10,
+                  }}
                 />
                 <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={18}>
                   {errorData.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.pct > 30 ? '#ef4444' : '#22c55e'} fillOpacity={0.85} />
+                    <Cell
+                      key={idx}
+                      fill={entry.pct > 30 ? '#ef4444' : '#22c55e'}
+                      fillOpacity={0.85}
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Sin datos de error registrados.</p>
+            <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>
+              Sin datos de error registrados.
+            </p>
           )}
         </div>
       </div>
 
       {/* Tiempos promedio */}
       <div
-        style={{ marginTop: '2rem', border: '1px solid #e5e7eb', padding: '1.5rem', borderRadius: '8px' }}
+        style={{
+          marginTop: '2rem',
+          border: '1px solid #e5e7eb',
+          padding: '1.5rem',
+          borderRadius: '8px',
+        }}
       >
         <h3
-          style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}
+          style={{
+            margin: '0 0 1.25rem 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.95rem',
+          }}
         >
           <Clock style={{ color: '#f59e0b', width: 18, height: 18 }} /> Latencia Promedio por Paso
-          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: '#f59e0b' }}>
+          <span
+            style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: '#f59e0b' }}
+          >
             — SLA: 2000 ms
           </span>
         </h3>
         {timesData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={timesData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 0 }}>
+            <BarChart
+              data={timesData}
+              layout="vertical"
+              margin={{ top: 4, right: 28, bottom: 4, left: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-              <XAxis type="number" unit=" ms" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: '#374151' }} tickLine={false} axisLine={false} />
+              <XAxis
+                type="number"
+                unit=" ms"
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={90}
+                tick={{ fontSize: 11, fill: '#374151' }}
+                tickLine={false}
+                axisLine={false}
+              />
               <ChartTooltip
                 formatter={(v: number) => [`${v} ms`, 'Latencia promedio']}
                 contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
@@ -606,17 +718,28 @@ export const AdminDashboard: React.FC = () => {
                 x={2000}
                 stroke="#f59e0b"
                 strokeDasharray="5 3"
-                label={{ value: 'SLA 2000ms', position: 'insideTopRight', fill: '#f59e0b', fontSize: 10 }}
+                label={{
+                  value: 'SLA 2000ms',
+                  position: 'insideTopRight',
+                  fill: '#f59e0b',
+                  fontSize: 10,
+                }}
               />
               <Bar dataKey="ms" radius={[0, 4, 4, 0]} maxBarSize={18}>
                 {timesData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.ms >= 2000 ? '#f59e0b' : '#3b82f6'} fillOpacity={0.85} />
+                  <Cell
+                    key={idx}
+                    fill={entry.ms >= 2000 ? '#f59e0b' : '#3b82f6'}
+                    fillOpacity={0.85}
+                  />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Esperando consolidación de métricas en Neon...</p>
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem', paddingTop: '0.5rem' }}>
+            Esperando consolidación de métricas en Neon...
+          </p>
         )}
       </div>
 
